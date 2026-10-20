@@ -1,0 +1,762 @@
+#!/usr/bin/env python3
+"""
+Nature-Mirror Mesh — tiny app (v1). One file: stdlib web UI + RNS/LXMF.
+
+    python3 nmm_app.py [port]     → the app (default port 8899)
+    python3 nmm_app.py backend …  → per-login user backend (internal;
+                                    spawned by the web layer, not run
+                                    by hand)
+
+How it works
+------------
+* Your account key is just **2 words** (TESTING ONLY — this is weak on
+  purpose for now; it will grow to a 12-word phrase later). The account
+  identity is derived deterministically:
+
+      seed     = SHA-512("word1 word2")     (lower-cased, single space)
+      identity = RNS.Identity.from_bytes(seed)
+
+  Same 2 words → same identity → same unique ID, on any device.
+  Your unique ID is the LXMF delivery destination hash of that identity
+  (32 hex characters; the first 16 are shown as the short form).
+
+* Logging in starts a backend process holding that identity. The
+  backend connects over loopback TCP to the local Post Office
+  (postoffice.py), announces itself, is configured with the post
+  office as its LXMF propagation node
+  (LXMRouter.set_outbound_propagation_node) and syncs waiting mail
+  (LXMRouter.request_messages_from_propagation_node).
+
+* Sending to someone who is offline: the message goes out with
+  desired_method = PROPAGATED. The post office stores it in its spool
+  ("stored at post office") until the recipient logs in and syncs.
+
+* Logging out kills the backend and deletes the session files — the
+  identity is gone from memory. The account's own local data (contacts,
+  chat history, LXMF ratchet state) stays under
+  app/data/users/<your-id>/, like a phone app keeping its data, and the
+  post office spool is never touched by a logout.
+"""
+
+import hashlib
+import json
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import threading
+import time
+import uuid
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(APP_DIR, "data")
+PO_DIR = os.path.join(DATA_DIR, "postoffice")
+PN_FILE = os.path.join(PO_DIR, "propagation_node.txt")
+PO_PIDFILE = os.path.join(DATA_DIR, "postoffice.pid")
+PN_PORT = int(os.environ.get("NMM_PN_PORT", "4429"))
+CLIENT_RNS_DIR = os.path.join(DATA_DIR, "rns_client")
+USERS_DIR = os.path.join(DATA_DIR, "users")
+SESSIONS_DIR = os.path.join(DATA_DIR, "sessions")
+DEFAULT_PORT = 8899
+
+
+# ----------------------------------------------------------------------
+# Identity derivation (pure — no running Reticulum needed)
+# ----------------------------------------------------------------------
+
+def seed_from_words(word1, word2):
+    normalised = (word1.strip().lower() + " " + word2.strip().lower())
+    return hashlib.sha512(normalised.encode("utf-8")).digest()
+
+
+def id_from_seed(seed):
+    import RNS
+    identity = RNS.Identity.from_bytes(seed)
+    dest_hash = RNS.Destination.hash(identity, "lxmf", "delivery")
+    return RNS.hexrep(dest_hash, delimit=False)
+
+
+def atomic_write_json(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=1)
+    os.replace(tmp, path)
+
+
+def read_json(path, default):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+# ======================================================================
+# BACKEND MODE — one process per login, holds the user's identity
+# ======================================================================
+
+def write_client_config(configdir):
+    os.makedirs(configdir, exist_ok=True)
+    cfg = f"""[reticulum]
+  enable_transport = False
+  share_instance = False
+  panic_on_interface_error = False
+
+[logging]
+  loglevel = 4
+
+[interfaces]
+  [[NMM Post Office]]
+    type = TCPClientInterface
+    enabled = True
+    target_host = 127.0.0.1
+    target_port = {PN_PORT}
+"""
+    with open(os.path.join(configdir, "config"), "w") as f:
+        f.write(cfg)
+
+
+class Backend:
+    SYNC_IDLE_STATES = None  # filled in run() once LXMF is imported
+
+    def __init__(self, seed, session_dir):
+        self.seed = seed
+        self.session_dir = session_dir
+        self.cmd_file = os.path.join(session_dir, "cmd.jsonl")
+        self.ready_file = os.path.join(session_dir, "ready.json")
+        self.status_file = os.path.join(session_dir, "status.json")
+        self.user_id = id_from_seed(seed)
+        self.user_dir = os.path.join(USERS_DIR, self.user_id)
+        os.makedirs(self.user_dir, exist_ok=True)
+        self.inbox_file = os.path.join(self.user_dir, "inbox.json")
+        self.sent_file = os.path.join(self.user_dir, "sent.json")
+        self.stop_flag = False
+        self.router = None
+        self.identity = None
+        self.delivery = None
+        self.pn_hash = None
+        self.inbox = read_json(self.inbox_file, [])
+        self.inbox_hashes = {m.get("hash") for m in self.inbox}
+        self.sent_entries = {e["local_id"]: e
+                             for e in read_json(self.sent_file, [])}
+        self.tracked = {}          # local_id -> LXMessage
+        self.lock = threading.Lock()
+        self.last_sync_request = 0
+
+    # ---- LXMF delivery callback -------------------------------------
+    def on_message(self, message):
+        import RNS
+        try:
+            content = message.content_as_string()
+        except Exception:
+            content = message.content.decode("utf-8", "replace")
+        entry = {
+            "hash": RNS.hexrep(message.hash, delimit=False),
+            "from": RNS.hexrep(message.source_hash, delimit=False),
+            "content": content,
+            "time": time.time(),
+        }
+        with self.lock:
+            if entry["hash"] in self.inbox_hashes:
+                return
+            self.inbox_hashes.add(entry["hash"])
+            self.inbox.append(entry)
+            atomic_write_json(self.inbox_file, self.inbox)
+        print(f"[backend] message received from {entry['from'][:16]}…: "
+              f"{content!r}", flush=True)
+
+    # ---- sending ------------------------------------------------------
+    def status_text(self, msg):
+        import LXMF
+        st = msg.state
+        if st == LXMF.LXMessage.FAILED:
+            return "failed"
+        if st == LXMF.LXMessage.REJECTED:
+            return "rejected"
+        if st == LXMF.LXMessage.DELIVERED:
+            return "delivered"
+        if st == LXMF.LXMessage.SENT:
+            if msg.desired_method == LXMF.LXMessage.PROPAGATED:
+                return "stored at post office"
+            return "sent"
+        if st == LXMF.LXMessage.SENDING:
+            return "sending"
+        return "queued"
+
+    def refresh_sent_file(self):
+        import RNS
+        changed = False
+        with self.lock:
+            items = list(self.tracked.items())
+        for local_id, msg in items:
+            entry = self.sent_entries.get(local_id)
+            if entry is None:
+                continue
+            new_status = self.status_text(msg)
+            new_hash = (RNS.hexrep(msg.hash, delimit=False)
+                        if msg.hash else entry.get("lxmf_hash"))
+            if entry.get("status") != new_status or \
+               entry.get("lxmf_hash") != new_hash:
+                entry["status"] = new_status
+                entry["lxmf_hash"] = new_hash
+                changed = True
+        if changed:
+            with self.lock:
+                atomic_write_json(
+                    self.sent_file,
+                    sorted(self.sent_entries.values(),
+                           key=lambda e: e["time"]))
+
+    def do_send(self, local_id, to_hex, content):
+        import RNS
+        import LXMF
+        entry = self.sent_entries[local_id]
+        try:
+            to_hash = bytes.fromhex(to_hex)
+        except Exception:
+            entry["status"] = "failed: bad ID"
+            self.refresh_sent_file()
+            return
+        # Learn the recipient's public key: the post office (a transport
+        # node) answers path requests from its announce table, even for
+        # contacts that are currently offline.
+        deadline = time.time() + 60
+        dest_identity = None
+        while time.time() < deadline and not self.stop_flag:
+            if RNS.Transport.has_path(to_hash):
+                dest_identity = RNS.Identity.recall(to_hash)
+                if dest_identity is not None:
+                    break
+            RNS.Transport.request_path(to_hash)
+            time.sleep(1)
+        if dest_identity is None:
+            entry["status"] = "failed: ID not found (no path)"
+            with self.lock:
+                atomic_write_json(
+                    self.sent_file,
+                    sorted(self.sent_entries.values(),
+                           key=lambda e: e["time"]))
+            print(f"[backend] send {local_id}: no path to {to_hex}",
+                  flush=True)
+            return
+        dest = RNS.Destination(dest_identity, RNS.Destination.OUT,
+                               RNS.Destination.SINGLE, "lxmf", "delivery")
+        msg = LXMF.LXMessage(dest, self.delivery, content=content,
+                             title="nmm",
+                             desired_method=LXMF.LXMessage.PROPAGATED)
+        with self.lock:
+            self.tracked[local_id] = msg
+        self.router.handle_outbound(msg)
+        print(f"[backend] send {local_id}: handed to router "
+              f"(propagated via post office)", flush=True)
+
+    def handle_cmd(self, cmd):
+        ctype = cmd.get("type")
+        if ctype == "send":
+            local_id = cmd["local_id"]
+            with self.lock:
+                self.sent_entries[local_id] = {
+                    "local_id": local_id,
+                    "lxmf_hash": None,
+                    "to": cmd["to"],
+                    "content": cmd["content"],
+                    "status": "queued",
+                    "time": time.time(),
+                }
+                atomic_write_json(
+                    self.sent_file,
+                    sorted(self.sent_entries.values(),
+                           key=lambda e: e["time"]))
+            threading.Thread(target=self.do_send,
+                             args=(local_id, cmd["to"], cmd["content"]),
+                             daemon=True).start()
+        elif ctype == "sync":
+            self.request_sync(force=True)
+
+    def request_sync(self, force=False):
+        import LXMF
+        if self.pn_hash is None:
+            return
+        idle = (LXMF.LXMRouter.PR_IDLE, LXMF.LXMRouter.PR_COMPLETE,
+                LXMF.LXMRouter.PR_NO_PATH, LXMF.LXMRouter.PR_LINK_FAILED,
+                LXMF.LXMRouter.PR_TRANSFER_FAILED)
+        state = self.router.propagation_transfer_state
+        if state in idle and (force or
+                              time.time() - self.last_sync_request > 15):
+            self.last_sync_request = time.time()
+            print(f"[backend] requesting waiting messages from post "
+                  f"office (state was {state})", flush=True)
+            self.router.request_messages_from_propagation_node(
+                self.identity)
+
+    # ---- main ---------------------------------------------------------
+    def run(self):
+        import RNS
+        import LXMF
+
+        os.makedirs(CLIENT_RNS_DIR, exist_ok=True)
+        write_client_config(CLIENT_RNS_DIR)
+        RNS.Reticulum(configdir=CLIENT_RNS_DIR)
+
+        self.identity = RNS.Identity.from_bytes(self.seed)
+        # Router storage is per-account and persistent (like an app
+        # keeping its data): LXMF ratchet state lives there and must
+        # survive logouts, or old announces could not be decrypted.
+        self.router = LXMF.LXMRouter(
+            identity=self.identity,
+            storagepath=self.user_dir)
+        self.delivery = self.router.register_delivery_identity(
+            self.identity, display_name="NMM user", stamp_cost=None)
+        self.router.register_delivery_callback(self.on_message)
+
+        real_id = RNS.hexrep(self.delivery.hash, delimit=False)
+        assert real_id == self.user_id, (real_id, self.user_id)
+        print(f"[backend] logged in, ID = {real_id}", flush=True)
+
+        # Configure the post office as our propagation node (explicit
+        # configuration mechanism of LXMF 1.2.1).
+        if os.path.isfile(PN_FILE):
+            with open(PN_FILE) as f:
+                self.pn_hash = bytes.fromhex(f.read().strip())
+            self.router.set_outbound_propagation_node(self.pn_hash)
+            print(f"[backend] outbound propagation node set to "
+                  f"{RNS.hexrep(self.pn_hash, delimit=False)}",
+                  flush=True)
+            deadline = time.time() + 40
+            while not RNS.Transport.has_path(self.pn_hash) and \
+                    time.time() < deadline:
+                RNS.Transport.request_path(self.pn_hash)
+                time.sleep(0.5)
+            print(f"[backend] path to post office: "
+                  f"{RNS.Transport.has_path(self.pn_hash)}", flush=True)
+        else:
+            print("[backend] WARNING: post office file not found — "
+                  "is postoffice.py running?", flush=True)
+
+        self.router.announce(self.delivery.hash)
+        self.request_sync(force=True)
+        atomic_write_json(self.ready_file,
+                          {"id": real_id, "time": time.time()})
+
+        def _sigterm(signum, frame):
+            self.stop_flag = True
+
+        signal.signal(signal.SIGTERM, _sigterm)
+        signal.signal(signal.SIGINT, _sigterm)
+
+        cmd_offset = 0
+        last_announce = time.time()
+        last_status = 0
+        while not self.stop_flag:
+            # commands from the web layer
+            try:
+                if os.path.isfile(self.cmd_file):
+                    with open(self.cmd_file) as f:
+                        f.seek(cmd_offset)
+                        lines = f.readlines()
+                        cmd_offset = f.tell()
+                    for line in lines:
+                        line = line.strip()
+                        if line:
+                            try:
+                                self.handle_cmd(json.loads(line))
+                            except Exception as e:
+                                print(f"[backend] cmd error: {e}",
+                                      flush=True)
+            except Exception as e:
+                print(f"[backend] cmd poll error: {e}", flush=True)
+
+            if time.time() - last_announce > 20:
+                try:
+                    self.router.announce(self.delivery.hash)
+                except Exception:
+                    pass
+                last_announce = time.time()
+
+            self.request_sync()
+            self.refresh_sent_file()
+
+            if time.time() - last_status > 2:
+                atomic_write_json(self.status_file, {
+                    "id": real_id,
+                    "pn_path": bool(self.pn_hash is not None and
+                                    RNS.Transport.has_path(self.pn_hash)),
+                    "transfer_state":
+                        self.router.propagation_transfer_state,
+                    "time": time.time(),
+                })
+                last_status = time.time()
+            time.sleep(0.4)
+
+        print("[backend] shutting down", flush=True)
+        try:
+            self.router.exit_handler()
+        except Exception:
+            pass
+        return 0
+
+
+def run_backend(argv):
+    # argv: backend --session <dir>   (seed arrives via env NMM_SEED_HEX)
+    session_dir = argv[argv.index("--session") + 1]
+    seed = bytes.fromhex(os.environ["NMM_SEED_HEX"])
+    return Backend(seed, session_dir).run()
+
+
+# ======================================================================
+# WEB MODE
+# ======================================================================
+
+SESSION = {"proc": None, "session_dir": None, "user_id": None,
+           "seed": None}
+SESSION_LOCK = threading.Lock()
+
+
+def ensure_postoffice():
+    """Start the post office if it is not already running (pidfile)."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if os.path.isfile(PO_PIDFILE):
+        try:
+            with open(PO_PIDFILE) as f:
+                pid = int(f.read().strip())
+            os.kill(pid, 0)
+            return pid
+        except Exception:
+            pass
+    log = open(os.path.join(DATA_DIR, "postoffice.log"), "ab")
+    proc = subprocess.Popen(
+        [sys.executable, os.path.join(APP_DIR, "postoffice.py")],
+        stdout=log, stderr=subprocess.STDOUT)
+    with open(PO_PIDFILE, "w") as f:
+        f.write(str(proc.pid))
+    print(f"[app] started post office (pid {proc.pid})")
+    return proc.pid
+
+
+def user_file(user_id, name, default):
+    return read_json(os.path.join(USERS_DIR, user_id, name), default)
+
+
+class Handler:
+    pass
+
+
+def make_handler():
+    from http.server import BaseHTTPRequestHandler
+
+    class H(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def log_message(self, fmt, *args):
+            pass
+
+        def _json(self, code, obj):
+            body = json.dumps(obj).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _body(self):
+            length = int(self.headers.get("Content-Length") or 0)
+            if length == 0:
+                return {}
+            return json.loads(self.rfile.read(length).decode())
+
+        def do_GET(self):
+            if self.path == "/":
+                body = INDEX_HTML.encode()
+                self.send_response(200)
+                self.send_header("Content-Type",
+                                 "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            elif self.path == "/api/state":
+                self._json(200, api_state())
+            else:
+                self._json(404, {"error": "not found"})
+
+        def do_POST(self):
+            try:
+                data = self._body()
+                if self.path == "/api/login":
+                    self._json(*api_login(data))
+                elif self.path == "/api/logout":
+                    self._json(*api_logout())
+                elif self.path == "/api/contacts":
+                    self._json(*api_add_contact(data))
+                elif self.path == "/api/send":
+                    self._json(*api_send(data))
+                elif self.path == "/api/sync":
+                    self._json(*api_sync())
+                else:
+                    self._json(404, {"error": "not found"})
+            except Exception as e:
+                self._json(500, {"error": str(e)})
+
+    return H
+
+
+def api_state():
+    with SESSION_LOCK:
+        active = SESSION["proc"] is not None and \
+            SESSION["proc"].poll() is None
+        user_id = SESSION["user_id"] if active else None
+        session_dir = SESSION["session_dir"]
+    state = {
+        "logged_in": bool(active),
+        "postoffice_file": os.path.isfile(PN_FILE),
+    }
+    if active and user_id:
+        state["id"] = user_id
+        state["short_id"] = user_id[:16]
+        state["contacts"] = user_file(user_id, "contacts.json", [])
+        state["inbox"] = user_file(user_id, "inbox.json", [])
+        state["sent"] = user_file(user_id, "sent.json", [])
+        if session_dir:
+            state["backend"] = read_json(
+                os.path.join(session_dir, "status.json"), {})
+    return state
+
+
+def api_login(data):
+    word1 = (data.get("word1") or "").strip()
+    word2 = (data.get("word2") or "").strip()
+    if not word1 or not word2:
+        return 400, {"error": "two words are required"}
+    with SESSION_LOCK:
+        if SESSION["proc"] is not None and \
+                SESSION["proc"].poll() is None:
+            return 409, {"error": "already logged in — log out first"}
+        seed = seed_from_words(word1, word2)
+        user_id = id_from_seed(seed)
+        session_dir = os.path.join(
+            SESSIONS_DIR, f"{user_id[:12]}-{int(time.time())}")
+        os.makedirs(session_dir, exist_ok=True)
+        env = dict(os.environ)
+        env["NMM_SEED_HEX"] = seed.hex()
+        log = open(os.path.join(session_dir, "backend.log"), "wb")
+        proc = subprocess.Popen(
+            [sys.executable, os.path.abspath(__file__), "backend",
+             "--session", session_dir],
+            env=env, stdout=log, stderr=subprocess.STDOUT)
+        SESSION.update(proc=proc, session_dir=session_dir,
+                       user_id=user_id, seed=seed)
+    # Wait for the backend to be ready (identity live, post office set).
+    ready_file = os.path.join(session_dir, "ready.json")
+    deadline = time.time() + 90
+    while time.time() < deadline:
+        if os.path.isfile(ready_file):
+            ready = read_json(ready_file, {})
+            return 200, {"id": ready.get("id", user_id),
+                         "short_id": ready.get("id", user_id)[:16]}
+        if SESSION["proc"].poll() is not None:
+            return 500, {"error": "backend exited during login; see "
+                                  "session backend.log"}
+        time.sleep(0.25)
+    return 504, {"error": "backend did not become ready in 90 s"}
+
+
+def api_logout():
+    with SESSION_LOCK:
+        proc = SESSION["proc"]
+        session_dir = SESSION["session_dir"]
+        if proc is not None:
+            try:
+                proc.terminate()
+                proc.wait(timeout=10)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+        # "Clear data": identity + session files are dropped. The
+        # account's own local data under data/users/<id>/ stays (like a
+        # phone app keeping its data); the post office is untouched.
+        if session_dir and os.path.isdir(session_dir):
+            shutil.rmtree(session_dir, ignore_errors=True)
+        SESSION.update(proc=None, session_dir=None, user_id=None,
+                       seed=None)
+    return 200, {"ok": True}
+
+
+def api_add_contact(data):
+    with SESSION_LOCK:
+        user_id = SESSION["user_id"]
+    if not user_id:
+        return 401, {"error": "not logged in"}
+    cid = (data.get("id") or "").strip().lower()
+    name = (data.get("name") or "").strip() or cid[:16]
+    try:
+        bytes.fromhex(cid)
+        assert len(cid) == 32
+    except Exception:
+        return 400, {"error": "ID must be 32 hex characters"}
+    path = os.path.join(USERS_DIR, user_id, "contacts.json")
+    contacts = read_json(path, [])
+    contacts = [c for c in contacts if c["id"] != cid]
+    contacts.append({"id": cid, "name": name})
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    atomic_write_json(path, contacts)
+    return 200, {"ok": True, "contacts": contacts}
+
+
+def _append_cmd(cmd):
+    with SESSION_LOCK:
+        session_dir = SESSION["session_dir"]
+        proc = SESSION["proc"]
+    if not session_dir or proc is None or proc.poll() is not None:
+        return False
+    with open(os.path.join(session_dir, "cmd.jsonl"), "a") as f:
+        f.write(json.dumps(cmd) + "\n")
+    return True
+
+
+def api_send(data):
+    with SESSION_LOCK:
+        user_id = SESSION["user_id"]
+    if not user_id:
+        return 401, {"error": "not logged in"}
+    to = (data.get("to") or "").strip().lower()
+    content = data.get("content") or ""
+    try:
+        bytes.fromhex(to)
+        assert len(to) == 32
+    except Exception:
+        return 400, {"error": "recipient ID must be 32 hex characters"}
+    if not content.strip():
+        return 400, {"error": "message is empty"}
+    local_id = uuid.uuid4().hex[:12]
+    if not _append_cmd({"type": "send", "local_id": local_id,
+                        "to": to, "content": content}):
+        return 500, {"error": "backend not running"}
+    return 200, {"ok": True, "local_id": local_id}
+
+
+def api_sync():
+    if not _append_cmd({"type": "sync"}):
+        return 500, {"error": "backend not running"}
+    return 200, {"ok": True}
+
+
+INDEX_HTML = """<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nature-Mirror Mesh</title>
+<style>
+ body{font-family:system-ui,sans-serif;margin:0;background:#0e1512;color:#e8f0ea}
+ .wrap{max-width:640px;margin:0 auto;padding:16px}
+ h1{font-size:20px} .card{background:#16211b;border:1px solid #24402f;border-radius:12px;padding:14px;margin:12px 0}
+ input,button,textarea{font-size:16px;padding:9px;border-radius:8px;border:1px solid #33513d;background:#0e1512;color:#e8f0ea}
+ button{background:#1e4630;cursor:pointer} button:hover{background:#27603f}
+ .mono{font-family:monospace;word-break:break-all} .small{font-size:13px;color:#9db8a6}
+ .msg{margin:6px 0;padding:8px 10px;border-radius:10px;max-width:85%}
+ .mine{background:#1e4630;margin-left:auto} .theirs{background:#1a2630;margin-right:auto}
+ .row{display:flex;gap:8px;flex-wrap:wrap} .row>*{flex:1}
+ .contact{padding:8px;border:1px solid #33513d;border-radius:8px;margin:4px 0;cursor:pointer;background:none;width:100%;text-align:left;color:#e8f0ea}
+ .contact.sel{background:#1e4630}
+</style>
+<div class="wrap">
+ <h1>🌿 Nature-Mirror Mesh <span class="small">tiny app v1</span></h1>
+ <div id="app">Loading…</div>
+ <p class="small">Offline-first chat. Messages for offline friends wait
+ at your local Post Office until they log in. Your account key is just
+ 2 words — <b>for testing only</b>, never use it for anything valuable.</p>
+</div>
+<script>
+let state=null, selected=null;
+async function api(path, data){
+  const r = await fetch(path, data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{});
+  return r.json();
+}
+function esc(s){return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+async function refresh(){
+  state = await api('/api/state');
+  render();
+}
+function render(){
+  const el = document.getElementById('app');
+  if(!state.logged_in){
+    el.innerHTML = `<div class="card"><h3>Create account / Log in</h3>
+      <div class="row"><input id="w1" placeholder="word one">
+      <input id="w2" placeholder="word two"></div>
+      <p><button onclick="login()">Create / Log in</button></p>
+      <p class="small">Same 2 words always bring back the same account
+      and the same unique ID.</p></div>`;
+    return;
+  }
+  const contacts = state.contacts||[];
+  if(selected && !contacts.find(c=>c.id===selected)) selected=null;
+  let conv = [];
+  (state.inbox||[]).filter(m=>m.from===selected).forEach(m=>conv.push({mine:false,text:m.content,time:m.time,st:''}));
+  (state.sent||[]).filter(m=>m.to===selected).forEach(m=>conv.push({mine:true,text:m.content,time:m.time,st:m.status}));
+  conv.sort((a,b)=>a.time-b.time);
+  el.innerHTML = `
+   <div class="card"><div class="small">Your unique ID</div>
+    <div class="mono">${state.id}</div>
+    <div class="small">short: ${state.short_id}… · post office:
+    ${state.backend && state.backend.pn_path ? 'connected ✓' : 'connecting…'}</div>
+    <p class="row"><button onclick="syncNow()">Sync now</button>
+    <button onclick="logout()">Log out / clear data</button></p></div>
+   <div class="card"><h3>Contacts</h3>
+    ${contacts.map(c=>`<button class="contact ${c.id===selected?'sel':''}" onclick="sel('${c.id}')">${esc(c.name)} <span class="mono small">${c.id.slice(0,16)}…</span></button>`).join('') || '<p class="small">No contacts yet.</p>'}
+    <div class="row"><input id="cid" placeholder="contact ID (32 hex)">
+    <input id="cname" placeholder="name"></div>
+    <p><button onclick="addContact()">Add contact</button></p></div>
+   ${selected?`<div class="card"><h3>Chat</h3>
+    ${conv.map(m=>`<div class="msg ${m.mine?'mine':'theirs'}">${esc(m.text)}<div class="small">${new Date(m.time*1000).toLocaleTimeString()} ${m.st?('· '+esc(m.st)):''}</div></div>`).join('') || '<p class="small">No messages yet.</p>'}
+    <div class="row"><input id="msg" placeholder="message…">
+    <button onclick="sendMsg()">Send</button></div></div>`:''}`;
+}
+async function login(){
+  const w1=document.getElementById('w1').value, w2=document.getElementById('w2').value;
+  const r = await api('/api/login', {word1:w1, word2:w2});
+  if(r.error) alert(r.error);
+  refresh();
+}
+async function logout(){ await api('/api/logout', {}); selected=null; refresh(); }
+async function syncNow(){ await api('/api/sync', {}); setTimeout(refresh, 800); }
+function sel(id){ selected=id; render(); }
+async function addContact(){
+  const id=document.getElementById('cid').value, name=document.getElementById('cname').value;
+  const r = await api('/api/contacts', {id:id, name:name});
+  if(r.error) alert(r.error); else selected=id.trim().toLowerCase();
+  refresh();
+}
+async function sendMsg(){
+  const m=document.getElementById('msg').value;
+  const r = await api('/api/send', {to:selected, content:m});
+  if(r.error) alert(r.error);
+  setTimeout(refresh, 800);
+}
+refresh(); setInterval(refresh, 2500);
+</script>
+"""
+
+
+def run_web(port):
+    from http.server import ThreadingHTTPServer
+    os.makedirs(SESSIONS_DIR, exist_ok=True)
+    ensure_postoffice()
+    server = ThreadingHTTPServer(("127.0.0.1", port), make_handler())
+    print(f"[app] Nature-Mirror Mesh app on http://127.0.0.1:{port}",
+          flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == "backend":
+        sys.exit(run_backend(sys.argv[1:]))
+    port = DEFAULT_PORT
+    if len(sys.argv) >= 2:
+        try:
+            port = int(sys.argv[1])
+        except ValueError:
+            port = int(os.environ.get("NMM_PORT", DEFAULT_PORT))
+    sys.exit(run_web(port))

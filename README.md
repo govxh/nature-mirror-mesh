@@ -54,6 +54,13 @@ Phase 2 spent nothing and moved every proof onto free machines. Full record: `la
   - **GitHub Actions:** [`.github/workflows/lab.yml`](.github/workflows/lab.yml) — push or dispatch runs the LXMF two-node test and the FT8 round-trip on GitHub's free runners.
   - **Google Colab:** [`colab/Nature_Mirror_Mesh_Colab.ipynb`](colab/Nature_Mirror_Mesh_Colab.ipynb) — open in Colab, **Runtime → Run all**; builds ft8_lib, runs the FT8 round-trip, installs Reticulum+LXMF and runs a two-node encrypted delivery test inline. Everything free, no GPU needed.
 
+## Status: digital lab complete (2026-10-20)
+
+The full digital proof ladder now stands: LXMF delivery (local + CI) → mesh3 forwarding 10/10 local + 10/10 CI → FT8 decode to −20 dB (synthetic) → real off-air FT8 reception via KiwiSDR (92 transmissions / 65 texts, independently corroborated ≤1 Hz) → oracle run #1 (honestly WRONG/INDETERMINATE) → TX-chain beacon PASS → an invented 16-FSK+RS modem carrying full LXMF packets over a simulated Watterson channel (9/10 at −10 dB) → a two-hop all-modem mesh → long messages (500 B and 1500 B, hash-validated) over that mesh.
+The phase also found and fixed a real RNS/interface race (duplicate part copies silently reverting resource status) — interface-level dedup is now part of the design.
+Still unproven, plainly: real RF transmission (needs licensed hardware), oracle accuracy (needs more runs), PyFT8 (dropped; ft8_lib is the codec).
+$0 spent; zero RF emitted. Full record: [`lab/results/FINAL_CONFIDENCE_REPORT.md`](lab/results/FINAL_CONFIDENCE_REPORT.md).
+
 ## Run the proof yourself
 
 ```bash

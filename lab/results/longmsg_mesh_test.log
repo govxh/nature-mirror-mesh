@@ -1,0 +1,78 @@
+=== Nature-Mirror Mesh — DIGITAL LAB 3 (Part 1): long messages over the simulated-radio mesh ===
+Pre-registered criterion: PASS per size = content + LXMF hash validated at C within 2 end-to-end attempts; both [500, 1500] must pass for OVERALL PASS; descent [1000, 750] if 1500 B fails.
+
+--- Attempt: size=500 B, attempt 1 (workdir size500_attempt1) ---
+--- transport.stdout (size 500, attempt 1) ---
+[2026-10-20 10:53:32] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size500_attempt1/node_t/interfaces"
+[2026-10-20 10:53:32] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size500_attempt1/node_t/interfaces"
+[T] transport node up (modem interfaces only), transport identity 2d84beea35acac0b16abd4295e0e9187
+[T] learned path to C over modem hop: hops_to(C)=1 (1 = C is one modem hop from T)
+[T] relay job done (C received the message); T forwarded traffic between S and C over modem hops
+--- receiver.stdout (size 500, attempt 1) ---
+[2026-10-20 10:53:38] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size500_attempt1/node_c/interfaces"
+[C] delivery destination: 031879d039b6dfc4c811aa091b77d3b0
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] delivery callback invoked
+[C] DECRYPTED MESSAGE RECEIVED (via 2 modem hops): 500 bytes, sha256=29da57cbb38b9de96487804233c23dc202638982c56288ba7b78545813fe0806
+[C] LXMF message hash: c8871d62ceb1ea8cb361b28870ad6ee92254d63cb8ef5d6673352f0a7663edea
+[C] message received and written to file
+--- sender.stdout (size 500, attempt 1) ---
+[2026-10-20 10:53:42] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size500_attempt1/node_s/interfaces"
+[S] path to C found over modem hops: hops_to(C)=2 (2 proves the path is S -> T -> C; S has NO direct link to C)
+[S] message handed to router: content 500 B, sha256=29da57cbb38b9de96487804233c23dc202638982c56288ba7b78545813fe0806
+[S] sent LXMF hash=c8871d62ceb1ea8cb361b28870ad6ee92254d63cb8ef5d6673352f0a7663edea packed=623 B
+[S] message state=1 delivery_attempts=1
+[S] message state=2 delivery_attempts=1
+[S] C-side validation file present; ending sender watch (delivery state as last logged)
+[S] sender done: {'state': 2, 'delivered': False, 'delivery_attempts': 1, 'hops_to_c': 2}
+
+--- Per-hop modem statistics (size 500, attempt 1) ---
+  hop S->T: frames_tx=21 rx_ok=7 rx_fail=4 distinct_packets=7 retransmitted_frames=14 airtime=742.9 s max_pkt=483 B
+  hop T->C: frames_tx=27 rx_ok=8 rx_fail=3 distinct_packets=8 retransmitted_frames=19 airtime=1043.6 s max_pkt=483 B
+  hop C->T: frames_tx=15 rx_ok=5 rx_fail=4 distinct_packets=5 retransmitted_frames=10 airtime=483.5 s max_pkt=230 B
+  hop T->S: frames_tx=24 rx_ok=6 rx_fail=3 distinct_packets=6 retransmitted_frames=18 airtime=872.6 s max_pkt=246 B
+  TOTAL: frames_tx=87 retransmitted=61 simulated airtime=3142.6 s; wall clock (sender phase): 31 s; max RNS packet seen: 483 B
+
+  size=500 attempt=1: content_ok=True hash_ok=True lxmf_delivery_attempts=1 S hops_to(C)=2 T hops_to(C)=1 S DELIVERED=False packed_len=623 B
+  ATTEMPT RESULT (size 500, attempt 1): PASS
+
+--- Attempt: size=1500 B, attempt 1 (workdir size1500_attempt1) ---
+--- transport.stdout (size 1500, attempt 1) ---
+[2026-10-20 10:54:14] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size1500_attempt1/node_t/interfaces"
+[2026-10-20 10:54:14] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size1500_attempt1/node_t/interfaces"
+[T] transport node up (modem interfaces only), transport identity bf205d60243b9398b22f08b18da5a677
+[T] learned path to C over modem hop: hops_to(C)=1 (1 = C is one modem hop from T)
+[T] relay job done (C received the message); T forwarded traffic between S and C over modem hops
+--- receiver.stdout (size 1500, attempt 1) ---
+[2026-10-20 10:54:20] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size1500_attempt1/node_c/interfaces"
+[C] delivery destination: 8a72c472eca8c8cf89d9e74c0dd4c388
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] delivery callback invoked
+[C] DECRYPTED MESSAGE RECEIVED (via 2 modem hops): 1500 bytes, sha256=d7030796f3ede34246345bf530cf016553a6978861962174bcd819c7db5ee1f3
+[C] LXMF message hash: 6251b191eda9e7cb717564c5dbd697d0d9f609752f54b8b8fb32e25314eb167d
+[C] message received and written to file
+--- sender.stdout (size 1500, attempt 1) ---
+[2026-10-20 10:54:24] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/longmsg_work/size1500_attempt1/node_s/interfaces"
+[S] path to C found over modem hops: hops_to(C)=2 (2 proves the path is S -> T -> C; S has NO direct link to C)
+[S] message handed to router: content 1500 B, sha256=d7030796f3ede34246345bf530cf016553a6978861962174bcd819c7db5ee1f3
+[S] sent LXMF hash=6251b191eda9e7cb717564c5dbd697d0d9f609752f54b8b8fb32e25314eb167d packed=1623 B
+[S] message state=1 delivery_attempts=1
+[S] message state=2 delivery_attempts=1
+[S] message state=8 delivery_attempts=1
+[S] delivery confirmed by router state=DELIVERED (proof crossed both modem hops back)
+[S] sender done: {'state': 8, 'delivered': True, 'delivery_attempts': 1, 'hops_to_c': 2}
+
+--- Per-hop modem statistics (size 1500, attempt 1) ---
+  hop S->T: frames_tx=30 rx_ok=10 rx_fail=6 distinct_packets=10 retransmitted_frames=20 airtime=1338.5 s max_pkt=483 B
+  hop T->C: frames_tx=39 rx_ok=11 rx_fail=2 distinct_packets=11 retransmitted_frames=28 airtime=1768.9 s max_pkt=483 B
+  hop C->T: frames_tx=15 rx_ok=5 rx_fail=4 distinct_packets=5 retransmitted_frames=10 airtime=483.5 s max_pkt=230 B
+  hop T->S: frames_tx=24 rx_ok=6 rx_fail=3 distinct_packets=6 retransmitted_frames=18 airtime=872.6 s max_pkt=246 B
+  TOTAL: frames_tx=108 retransmitted=76 simulated airtime=4463.5 s; wall clock (sender phase): 31 s; max RNS packet seen: 483 B
+
+  size=1500 attempt=1: content_ok=True hash_ok=True lxmf_delivery_attempts=1 S hops_to(C)=2 T hops_to(C)=1 S DELIVERED=True packed_len=1623 B
+  ATTEMPT RESULT (size 1500, attempt 1): PASS
+
+VERDICT: **PASS** — both 500 B and 1500 B delivered with content + hash validated at C within the pre-registered attempt budget. Measured envelope: at least 1500 B content per message over 2 simulated-radio hops at -10 dB per hop.
+Wrote /home/hatch/workspace/nature-mirror-mesh/lab/results/longmsg_mesh_test.log + /home/hatch/workspace/nature-mirror-mesh/lab/results/LONGMSG_TEST.md

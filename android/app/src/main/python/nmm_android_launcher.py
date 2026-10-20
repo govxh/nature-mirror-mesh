@@ -131,9 +131,18 @@ def start_app(files_dir):
       pidfile is how nmm_app's ensure_postoffice() checks liveness —
       a live pid in the file correctly tells it "already running, do
       not spawn one" (its subprocess spawn cannot work inside an APK).
+    * NMM_THREAD_BACKEND=1 is set (below), selecting nmm_app's thread
+      mode: the per-login backend — which the VM frontend spawns as a
+      subprocess via sys.executable, something that does not exist
+      inside an APK — runs on a daemon thread in this process instead.
     """
     _prepare_env(files_dir)
     _signal_thread_safe()
+
+    # Thread-mode backend (see docstring). setdefault: an explicit
+    # value from the environment always wins. Must be set before the
+    # first login is handled; nmm_app reads it at login time.
+    os.environ.setdefault("NMM_THREAD_BACKEND", "1")
 
     root = _data_root(files_dir)
     po_dir = os.path.join(root, "postoffice")

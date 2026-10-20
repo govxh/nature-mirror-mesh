@@ -43,6 +43,17 @@ nature-mirror-mesh/
         └── ft8_codec_test.log ← FT8 attempt output
 ```
 
+## Phase 2 ($0 cloud path) — 2026-10-20
+
+Phase 2 spent nothing and moved every proof onto free machines. Full record: `lab/results/RESULTS2.md`.
+
+- **FT8 decode — ✅ now verified from source.** `lab/ft8_lib/` (kgoba/ft8_lib, built with `make`) encodes `CQ NMM PK` to a WAV and decodes it back exactly, even after adding calibrated noise down to **−20 dB** full-band RMS SNR. Log: `lab/results/ft8_lib_test.log`. (Phase 1's unverified FT8 decode is closed.)
+- **Three-node mesh — ✅ transport forwarding verified.** `lab/lxmf_mesh3_test.py`: sender S and receiver C share **no interface**; a transport node T relays between them. S reports `hops_to(C)=2`, T reports `hops_to(C)=1`, and C prints the exact decrypted token (final verified run: `NMM-MESH3-20261020-073213`). Logs: `lab/results/lxmf_mesh3_final.log` (canonical) and `lab/results/lxmf_mesh3_test.log`. Note: early runs were flaky on path discovery — the cause (sender hammering `request_path()`) and fix are documented in RESULTS2.md.
+- **KiwiSDR real-signal reception — ❌ blocked by sandbox policy, honestly recorded.** Live public receivers in Ireland / USA / Australia / Canada answered HTTP status checks, but the audio websocket needs direct TCP, which this sandbox denies (exact error in `lab/results/kiwisdr_test.log`). No off-air decode is claimed; the decoder side is proven and waiting for a WAV from any normal machine.
+- **Run it all for free, two ways:**
+  - **GitHub Actions:** [`.github/workflows/lab.yml`](.github/workflows/lab.yml) — push or dispatch runs the LXMF two-node test and the FT8 round-trip on GitHub's free runners.
+  - **Google Colab:** [`colab/Nature_Mirror_Mesh_Colab.ipynb`](colab/Nature_Mirror_Mesh_Colab.ipynb) — open in Colab, **Runtime → Run all**; builds ft8_lib, runs the FT8 round-trip, installs Reticulum+LXMF and runs a two-node encrypted delivery test inline. Everything free, no GPU needed.
+
 ## Run the proof yourself
 
 ```bash

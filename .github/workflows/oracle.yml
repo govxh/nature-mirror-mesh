@@ -1,0 +1,187 @@
+name: Propagation Oracle Test ($0)
+
+# Nature-Mirror Mesh PROPAGATION ORACLE TEST -- falsifiable, $0, receive-only.
+#
+# Scientific protocol (ORDER MATTERS and is enforced by step order):
+#   1. PREDICT FIRST: lab/oracle_predict.py fetches live NOAA SWPC solar
+#      data (F10.7 / Ap / smoothed SSN) and commits to a prediction --
+#      per receiver site x band: expected FT8 decode category + best band.
+#      The model is named honestly in the prediction file: `itur` is
+#      probed for ITU-R P.533 (verified 2026-10-20: PyPI itur 0.4.0
+#      installs but ships NO itu533 module), so the fallback
+#      transparent "heuristic v1" is what actually scores, and the
+#      prediction says so.
+#   2. MEASURE: 4 kiwirecorder recordings SIMULTANEOUSLY (background
+#      processes launched together on a UTC minute boundary):
+#      Ireland (Carlow) + Australia (Esk, Queensland), each on
+#      14074 kHz (20 m) and 7074 kHz (40 m) USB, 90 s each.
+#      If a receiver rejects the 2nd simultaneous connection from this
+#      runner, the failed combo is retried ONCE sequentially and the
+#      log says so -- simultaneity failure is data, not something to
+#      hide. Results are decoded with ft8_lib (proven in kiwisdr.yml).
+#   3. SCORE: lab/oracle_score.py writes lab/results/oracle_ci.log --
+#      prediction verbatim, per-recording decode counts + unique
+#      message lists, and a SCORECARD (oracle CORRECT / WRONG / TIE /
+#      INDETERMINATE per site). Zero decodes is a valid result.
+#
+# Why GitHub Actions: the sandbox VM denies direct TCP, so KiwiSDR
+# websockets can never connect there (see lab/results/kiwisdr_test.log);
+# GitHub-hosted runners have unrestricted outbound access.
+# Manual trigger only. NO radio transmission is made by this workflow,
+# ever -- it only receives public receivers' internet audio streams.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12 + install deps
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # itur is installed because oracle_predict.py probes it honestly
+      # for ITU-R P.533 (0.4.0 installs fine; it just has no P.533).
+      - run: pip install numpy pypng pyyaml itur
+
+      - name: Clone kiwiclient (KiwiSDR recorder)
+        run: git clone --depth 1 https://github.com/jks-prv/kiwiclient /tmp/kiwiclient
+
+      - name: Clone + build ft8_lib (from source)
+        run: |
+          if [ ! -d lab/ft8_lib ]; then
+            git clone --depth 1 https://github.com/kgoba/ft8_lib lab/ft8_lib
+          fi
+          cd lab/ft8_lib && make
+
+      # ---- STEP 1 of the protocol: PREDICT, before any recording ----
+      - name: "PREDICT: run propagation oracle (before recording)"
+        run: |
+          python3 lab/oracle_predict.py
+          echo "--- oracle_prediction.json ---"
+          cat lab/results/oracle_prediction.json
+
+      # ---- STEP 2 of the protocol: MEASURE, all four at once ----
+      - name: "MEASURE: record 2 receivers x 2 bands simultaneously"
+        id: record
+        timeout-minutes: 18
+        shell: bash
+        run: |
+          set +e
+          mkdir -p /tmp/oracle_rec lab/results
+          NOTES="/tmp/oracle_rec/record_notes.txt"
+          TLIMIT=90
+          MIN_OK=360000
+          {
+            echo "=== Record step notes ==="
+            echo "Plan: 4 simultaneous kiwirecorder runs (Ireland + Australia, 14074 + 7074 kHz USB, passband 200-3000 Hz, tlimit ${TLIMIT}s, resample 12000)."
+            echo "Notes prepared (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > "$NOTES"
+
+          # Start on the next UTC minute boundary so all four 90 s
+          # recordings cover the same FT8 slots.
+          now=$(date +%s); wait_s=$(( 60 - (now % 60) ))
+          if [ "$wait_s" -lt 3 ]; then wait_s=$(( wait_s + 60 )); fi
+          echo "Waiting ${wait_s}s to align launch to a UTC minute boundary..." >> "$NOTES"
+          sleep "$wait_s"
+          echo "Parallel launch (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$NOTES"
+
+          declare -a TAGS PIDS
+          launch() {
+            local site="$1" host="$2" port="$3" freq="$4"
+            local tag="rec_${site}_${freq}"
+            ( cd /tmp/kiwiclient && timeout 150 python3 kiwirecorder.py \
+                -s "$host" -p "$port" -f "$freq" -m usb -L 200 -H 3000 \
+                --tlimit "$TLIMIT" --resample 12000 \
+                -d /tmp/oracle_rec --fn "$tag" \
+                -u "nature-mirror-mesh-oracle" ) \
+                > "/tmp/oracle_rec/${tag}.recorder.log" 2>&1 &
+            TAGS+=("$tag"); PIDS+=($!)
+          }
+          launch ireland   emeraldsdr.ddns.net        8073 14074
+          launch ireland   emeraldsdr.ddns.net        8073 7074
+          launch australia 22537.proxy.kiwisdr.com    8073 14074
+          launch australia 22537.proxy.kiwisdr.com    8073 7074
+          for i in "${!PIDS[@]}"; do
+            wait "${PIDS[$i]}"; rc=$?
+            echo "Parallel recorder ${TAGS[$i]}: exit code $rc" >> "$NOTES"
+          done
+          echo "Parallel phase finished (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$NOTES"
+          ls -la /tmp/oracle_rec >> "$NOTES" 2>&1
+
+          # Sequential fallback: any combo whose parallel attempt left a
+          # missing/tiny WAV is retried ONCE, sequentially, and the
+          # retry is logged as NOT simultaneous (e.g. if a receiver
+          # rejected a 2nd same-IP connection, that fact stays visible
+          # in the parallel recorder log + here).
+          retry() {
+            local site="$1" host="$2" port="$3" freq="$4"
+            local tag="rec_${site}_${freq}"
+            local wav="/tmp/oracle_rec/${tag}.wav"
+            local sz=0; [ -f "$wav" ] && sz=$(stat -c%s "$wav")
+            if [ "$sz" -lt "$MIN_OK" ]; then
+              echo "SEQUENTIAL FALLBACK for ${tag}: parallel attempt yielded ${sz} bytes (< ${MIN_OK}); retrying sequentially at $(date -u +%Y-%m-%dT%H:%M:%SZ). This recording is NOT simultaneous with the others." >> "$NOTES"
+              echo "" >> "/tmp/oracle_rec/${tag}.recorder.log"
+              echo "=== SEQUENTIAL FALLBACK ATTEMPT (not simultaneous) ===" >> "/tmp/oracle_rec/${tag}.recorder.log"
+              ( cd /tmp/kiwiclient && timeout 150 python3 kiwirecorder.py \
+                  -s "$host" -p "$port" -f "$freq" -m usb -L 200 -H 3000 \
+                  --tlimit "$TLIMIT" --resample 12000 \
+                  -d /tmp/oracle_rec --fn "$tag" \
+                  -u "nature-mirror-mesh-oracle" ) \
+                  >> "/tmp/oracle_rec/${tag}.recorder.log" 2>&1
+              echo "Sequential fallback ${tag}: exit code $?" >> "$NOTES"
+              sz=0; [ -f "$wav" ] && sz=$(stat -c%s "$wav")
+              echo "Sequential fallback ${tag}: WAV now ${sz} bytes" >> "$NOTES"
+            fi
+          }
+          retry ireland   emeraldsdr.ddns.net        8073 14074
+          retry ireland   emeraldsdr.ddns.net        8073 7074
+          retry australia 22537.proxy.kiwisdr.com    8073 14074
+          retry australia 22537.proxy.kiwisdr.com    8073 7074
+          echo "Record step finished (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$NOTES"
+          ls -la /tmp/oracle_rec >> "$NOTES" 2>&1
+          cat "$NOTES"
+
+      # ---- STEP 3 of the protocol: SCORE prediction vs measurement ----
+      - name: "SCORE: decode all recordings + scorecard"
+        if: always()
+        run: |
+          python3 lab/oracle_score.py \
+            --rec-dir /tmp/oracle_rec \
+            --results-dir lab/results
+
+      - name: Upload recordings + logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-test
+          path: |
+            /tmp/oracle_rec/*.wav
+            /tmp/oracle_rec/*.recorder.log
+            /tmp/oracle_rec/record_notes.txt
+            lab/results/oracle_ci.log
+            lab/results/oracle_prediction.json
+            lab/results/oracle_prediction_header.txt
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Commit prediction + scorecard back to repo
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lab/results/oracle_prediction.json lab/results/oracle_prediction_header.txt lab/results/oracle_ci.log
+          if git diff --cached --quiet; then
+            echo "Oracle results unchanged; nothing to commit."
+          else
+            git commit -m "Oracle test results [skip ci]"
+            git push
+          fi

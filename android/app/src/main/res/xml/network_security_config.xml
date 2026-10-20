@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's UI is a WebView pointed at http://127.0.0.1:8899 (the local
+     Python web server inside the app). Android 9+ blocks cleartext HTTP by
+     default (ERR_CLEARTEXT_NOT_PERMITTED — hit on the first device test,
+     2026-10-20). Permit cleartext ONLY to loopback; everything else stays
+     blocked, matching the app's offline, on-device-only design. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

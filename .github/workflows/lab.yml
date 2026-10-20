@@ -1,0 +1,61 @@
+name: Nature-Mirror Mesh Lab ($0 CI)
+
+# Runs the Nature-Mirror Mesh lab proofs on GitHub's free runners:
+#   1. LXMF two-node end-to-end encrypted delivery test (Reticulum)
+#   2. ft8_lib encode -> noise -> decode round-trip (built from source in CI)
+# Everything here is free/open-source and runs on the free tier for public repos.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Reticulum + LXMF
+        run: pip install rns lxmf
+
+      - name: LXMF two-node encrypted delivery test
+        timeout-minutes: 4
+        run: |
+          cd lab
+          python lxmf_two_node_test.py
+
+      - name: Clone + build ft8_lib (from source)
+        run: |
+          if [ ! -d lab/ft8_lib ]; then
+            git clone --depth 1 https://github.com/kgoba/ft8_lib lab/ft8_lib
+          fi
+          cd lab/ft8_lib && make
+
+      - name: FT8 round-trip (encode -> add noise -> decode)
+        run: |
+          cd lab/ft8_lib
+          ./gen_ft8 "CQ NMM PK" /tmp/ft8_clean.wav 1000
+          python3 - <<'PY'
+          import numpy as np, wave, subprocess
+          w = wave.open('/tmp/ft8_clean.wav','rb')
+          n, fr = w.getnframes(), w.getframerate()
+          x = np.frombuffer(w.readframes(n), dtype=np.int16).astype(np.float64); w.close()
+          sig = np.sqrt(np.mean(x**2)); rng = np.random.default_rng(42)
+          for snr in (-10, -15):
+              y = np.clip(x + rng.normal(0, sig/(10**(snr/20)), len(x)), -32767, 32767).astype(np.int16)
+              fn = f"/tmp/ft8_snr{snr}.wav"
+              wo = wave.open(fn,'wb'); wo.setnchannels(1); wo.setsampwidth(2); wo.setframerate(fr)
+              wo.writeframes(y.tobytes()); wo.close()
+              out = subprocess.run(['./decode_ft8', fn], capture_output=True, text=True).stdout
+              print(f"SNR {snr} dB decode output:\n{out}")
+              assert "CQ NMM PK" in out, f"FT8 decode failed at {snr} dB"
+          print("FT8 ROUND-TRIP: PASS")
+          PY

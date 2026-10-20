@@ -1,0 +1,40 @@
+=== Nature-Mirror Mesh — DIGITAL LAB 1: full LXMF packet over nmm_modem ===
+Pre-registered criterion: >= 8/10 byte-exact recoveries at -10 dB (fresh packet + fresh channel seed per trial). Sweep and offset runs are reported, not gated.
+
+[producer] packet 0: token=NMM-MODEM-3UN4D5FJCU6N packed=147 B sha256=ea5251bcb908e4a7...
+[producer] packet 1: token=NMM-MODEM-EP1F9O7NJDCK packed=147 B sha256=841e6231e4ed81ab...
+[producer] packet 2: token=NMM-MODEM-HR30RN2FUNFD packed=147 B sha256=b9b99d5c68363112...
+[producer] packet 3: token=NMM-MODEM-6N3N3UKTIFCX packed=147 B sha256=0e0f1e5aa8e02f74...
+[producer] packet 4: token=NMM-MODEM-GMFZMA9Z86ZI packed=147 B sha256=8b69507fa8aa1399...
+[producer] packet 5: token=NMM-MODEM-KZZNLS4W3032 packed=147 B sha256=0d3263bbf94d3d4a...
+[producer] packet 6: token=NMM-MODEM-PNBB7ME89JWL packed=147 B sha256=ce26950c9cbbbeec...
+[producer] packet 7: token=NMM-MODEM-DHL375KSAXRQ packed=147 B sha256=da7ac4cbd9f05d7f...
+[producer] packet 8: token=NMM-MODEM-228OY4VO2FR4 packed=147 B sha256=c76194cc76e2ed93...
+[producer] packet 9: token=NMM-MODEM-5HFY9YYBO2IA packed=147 B sha256=c5320e7f6cd5ea49...
+[producer] packet 10: token=NMM-MODEM-1T55YC0VD7S0 packed=147 B sha256=e889c503a1f34f46...
+
+Sweep packet: token=NMM-MODEM-3UN4D5FJCU6N packed=147 B sha256=ea5251bcb908e4a77a792d5abf28aa5790d6ee1fb00b766f04948172756e1e61
+Modem airtime per packet: 29.5 s (732 symbols); effective throughput = 4.99 payload bytes/s
+
+--- SNR sweep (sweep packet, fresh channel seed per level) ---
+  SNR +0 dB: byte-exact=YES lxmf-valid=YES (decode 0.2 s)
+  SNR -5 dB: byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  SNR -10 dB: byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  SNR -15 dB: byte-exact=NO lxmf-valid=NO (decode 0.2 s)
+  BONUS offset +40 Hz @ -10 dB: byte-exact=YES (decode 0.1 s)
+
+--- Reliability: 10 trials @ -10 dB (fresh packet + seed per trial) ---
+  trial  1: token=NMM-MODEM-EP1F9O7NJDCK packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  trial  2: token=NMM-MODEM-HR30RN2FUNFD packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  trial  3: token=NMM-MODEM-6N3N3UKTIFCX packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  trial  4: token=NMM-MODEM-GMFZMA9Z86ZI packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  trial  5: token=NMM-MODEM-KZZNLS4W3032 packed=147 B byte-exact=NO lxmf-valid=NO (decode 0.1 s)
+  trial  6: token=NMM-MODEM-PNBB7ME89JWL packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  trial  7: token=NMM-MODEM-DHL375KSAXRQ packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.2 s)
+  trial  8: token=NMM-MODEM-228OY4VO2FR4 packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  trial  9: token=NMM-MODEM-5HFY9YYBO2IA packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+  trial 10: token=NMM-MODEM-1T55YC0VD7S0 packed=147 B byte-exact=YES lxmf-valid=YES (decode 0.1 s)
+
+RELIABILITY: 9/10 byte-exact at -10 dB; 9/10 LXMF-validated
+CRITERION (8/10): MET
+RESULT: PASS

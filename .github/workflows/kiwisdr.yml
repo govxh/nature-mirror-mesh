@@ -51,7 +51,7 @@ jobs:
           {
             echo "=== KiwiSDR Live FT8 Reception - GitHub Actions (zero-dollar) ==="
             echo "Run start (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "Method: kiwirecorder.py (jks-prv/kiwiclient) -> WAV -> slice into 15 s windows -> ft8_lib decode_ft8 per window"
+            echo "Method: kiwirecorder.py (jks-prv/kiwiclient) -> WAV -> UTC-slot-aligned decode (lab/ft8_slot_decode.py, ft8_lib decode_ft8 per 15 s UTC slot, each slot once)"
             echo "Hosts (verified live 2026-10-20, source: lab/results/kiwisdr_test.log), tried in order:"
             echo "  1. emeraldsdr.ddns.net:8073          Carlow, Ireland (Europe)"
             echo "  2. dxcentral.proxy.kiwisdr.com:8073  Mandeville, LA, USA (North America)"
@@ -71,7 +71,7 @@ jobs:
           MIN_BYTES=102400
           DEADLINE=$(( $(date +%s) + 840 ))
 
-          WAV=""; USED_HOST=""; USED_FREQ=""
+          WAV=""; USED_HOST=""; USED_FREQ=""; REC_START_UTC=""
           for entry in "${HOSTS[@]}"; do
             hp="${entry%%|*}"; label="${entry##*|}"; host="${hp%%:*}"; port="${hp##*:}"
             for freq in $FREQS; do
@@ -80,8 +80,9 @@ jobs:
                 break 2
               fi
               tag="$(echo "$host" | cut -d. -f1)_${freq}"
+              attempt_start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
               echo "" >> "$LOG"
-              echo "--- Attempt: $host:$port ($label) freq=${freq} kHz USB passband 200-3000 Hz tlimit=${TLIMIT}s start_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ) ---" >> "$LOG"
+              echo "--- Attempt: $host:$port ($label) freq=${freq} kHz USB passband 200-3000 Hz tlimit=${TLIMIT}s start_utc=${attempt_start} ---" >> "$LOG"
               ( cd /tmp/kiwiclient && timeout 150 python3 kiwirecorder.py \
                   -s "$host" -p "$port" -f "$freq" -m usb -L 200 -H 3000 \
                   --tlimit "$TLIMIT" --resample 12000 \
@@ -93,6 +94,7 @@ jobs:
                 echo "Produced WAV: $cand (${sz} bytes)" >> "$LOG"
                 if [ "$sz" -gt "$MIN_BYTES" ]; then
                   WAV="$cand"; USED_HOST="$host:$port ($label)"; USED_FREQ="$freq"
+                  REC_START_UTC="$attempt_start"
                   echo "Selected recording: $WAV" >> "$LOG"
                   break 2
                 fi
@@ -116,75 +118,38 @@ jobs:
           cp "$WAV" ./kiwisdr_recording.wav
           echo "wav_found=true" >> "$GITHUB_OUTPUT"
 
-          python3 - "$WAV" "$USED_HOST" "$USED_FREQ" "$LOG" <<'PYEOF'
-          import sys, wave, subprocess, re
-          import numpy as np
-
-          wav_path, host, freq, log_path = sys.argv[1:5]
-          DEC = "lab/ft8_lib/decode_ft8"
-          log = open(log_path, "a")
-
-          w = wave.open(wav_path, "rb")
-          nch, sw, rate, n = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
-          raw = w.readframes(n); w.close()
-          x = np.frombuffer(raw, dtype=np.int16)
-          if nch > 1:
-              x = x[::nch]
-          x = x.astype(np.float64)
-          log.write("\n=== Decode phase ===\n")
-          log.write("Recording: %s host=%s freq=%s kHz USB\n" % (wav_path, host, freq))
-          log.write("WAV: %d Hz, %d channel(s), %d-bit, %.1f s, %d bytes\n" % (rate, nch, sw * 8, n / float(rate), len(raw)))
-          if rate != 12000:
-              m = int(round(len(x) * 12000.0 / rate))
-              x = np.interp(np.arange(m) * rate / 12000.0, np.arange(len(x)), x)
-              log.write("Resampled %d -> 12000 Hz (decode_ft8 expects 12000 Hz mono)\n" % rate)
-              rate = 12000
-          x = np.clip(x, -32767, 32767).astype(np.int16)
-
-          win = 15 * rate
-          stride = 2 * rate
-          total_events = 0
-          unique = {}
-          if len(x) >= win:
-              starts = list(range(0, len(x) - win + 1, stride))[:60]
-          else:
-              starts = [0]
-              log.write("WARNING: recording shorter than 15 s; decoding a single zero-padded window.\n")
-          log.write("Windows: %d x 15 s, stride 2 s (FT8 slots are 15 s, aligned to UTC :00/:15/:30/:45;\n" % len(starts))
-          log.write("the 2 s stride guarantees some window starts within 2 s before every slot boundary,\n")
-          log.write("so each transmission is fully inside at least one window despite the arbitrary record start).\n")
-          for s in starts:
-              seg = x[s:s + win]
-              if len(seg) < win:
-                  seg = np.pad(seg, (0, win - len(seg)))
-              fn = "/tmp/kiwi_win.wav"
-              wo = wave.open(fn, "wb"); wo.setnchannels(1); wo.setsampwidth(2); wo.setframerate(rate)
-              wo.writeframes(seg.tobytes()); wo.close()
-              p = subprocess.run([DEC, fn], capture_output=True, text=True)
-              m = re.search(r"Decoded (\d+) messages", p.stderr)
-              cnt = int(m.group(1)) if m else 0
-              total_events += cnt
-              lines = [ln for ln in p.stdout.splitlines() if "~" in ln]
-              log.write("\n[window offset %3d s] decode_ft8: %d message(s)\n" % (s // rate, cnt))
-              for ln in lines:
-                  log.write(ln + "\n")
-                  msg = ln.split("~", 1)[1].strip()
-                  if msg and msg not in unique:
-                      unique[msg] = ln
-          log.write("\n=== SUMMARY ===\n")
-          log.write("Host used: %s, frequency: %s kHz USB\n" % (host, freq))
-          log.write("Total decode events (incl. duplicates across overlapping windows): %d\n" % total_events)
-          log.write("Unique FT8 messages decoded: %d\n" % len(unique))
-          for msg, ln in unique.items():
-              log.write("  " + ln + "\n")
-          if not unique:
-              log.write("NO FT8 MESSAGES DECODED from this recording. Honest zero: the band may have been\n")
-              log.write("quiet, conditions poor, or no FT8 signals fell inside the recorded passband.\n")
-          log.write("NOTE: decode_ft8 prints a placeholder 000000 time field for file input; approximate\n")
-          log.write("UTC of a decode = recording start (see attempt line) + window offset + DT column.\n")
-          log.close()
-          print("Decode phase done: %d events, %d unique messages" % (total_events, len(unique)))
-          PYEOF
+          # UTC-slot-aligned decode (audit fix 2026-10-20): each 15 s
+          # FT8 slot is decoded exactly once by lab/ft8_slot_decode.py,
+          # aligned to the true UTC slot grid using the recording start
+          # captured at the selected attempt. (The old 2 s-stride
+          # slicing triple-decoded transmissions, merged repeats across
+          # slots by text, and silently missed the final slot.)
+          {
+            echo ""
+            echo "=== Decode phase ==="
+            echo "Recording: $WAV host=$USED_HOST freq=$USED_FREQ kHz USB"
+            echo "Recording start used for slot alignment: $REC_START_UTC"
+            echo "NOTE: this is the attempt banner timestamp; the audit of run 39389957321"
+            echo "found the first audio sample lags it by ~1.6-2.4 s (kiwirecorder connect"
+            echo "latency), so slot attribution is exact but DT values carry that offset."
+          } >> "$LOG"
+          SLOT_OUT="/tmp/slot_decode_out.txt"
+          python3 lab/ft8_slot_decode.py "$WAV" "$REC_START_UTC" \
+              --decode-ft8 lab/ft8_lib/decode_ft8 > "$SLOT_OUT" 2> /tmp/slot_decode.err
+          slot_rc=$?
+          cat "$SLOT_OUT" >> "$LOG"
+          if [ "$slot_rc" -ne 0 ]; then
+            echo "ft8_slot_decode.py exited $slot_rc; stderr:" >> "$LOG"
+            cat /tmp/slot_decode.err >> "$LOG"
+          fi
+          {
+            echo ""
+            echo "=== SUMMARY ==="
+            echo "Host used: $USED_HOST, frequency: $USED_FREQ kHz USB"
+            grep "^# Unique (slot, text) messages:" "$SLOT_OUT" | sed 's/^# //'
+            grep -cE "^[0-9]{4}-[0-9]{2}-[0-9]{2}T" "$SLOT_OUT" | sed 's/^/Decoded message lines listed above: /'
+            echo "NOTE: a decode's approximate UTC = its slot UTC + DT column."
+          } >> "$LOG"
           echo "Record+decode step finished." >> "$LOG"
           cat "$LOG"
 

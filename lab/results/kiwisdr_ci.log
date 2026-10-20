@@ -1,0 +1,348 @@
+=== KiwiSDR Live FT8 Reception - GitHub Actions (zero-dollar) ===
+Run start (UTC): 2026-10-20T07:57:25Z
+Method: kiwirecorder.py (jks-prv/kiwiclient) -> WAV -> slice into 15 s windows -> ft8_lib decode_ft8 per window
+Hosts (verified live 2026-10-20, source: lab/results/kiwisdr_test.log), tried in order:
+  1. emeraldsdr.ddns.net:8073          Carlow, Ireland (Europe)
+  2. dxcentral.proxy.kiwisdr.com:8073  Mandeville, LA, USA (North America)
+  3. 22537.proxy.kiwisdr.com:8073      Esk, Queensland, Australia (Oceania)
+  4. bachner.proxy.kiwisdr.com:8073    London, Ontario, Canada (North America)
+Frequencies per host, in order: 14074 kHz, then 7074 kHz (USB, passband 200-3000 Hz)
+
+--- Attempt: emeraldsdr.ddns.net:8073 (Carlow, Ireland (Europe)) freq=14074 kHz USB passband 200-3000 Hz tlimit=90s start_utc=2026-10-20T07:57:25Z ---
+2026-10-20 07:57:26,861 pid  2205 CAUTION: libsamplerate not available; low-quality linear interpolation will be used for resampling.
+2026-10-20 07:57:26,861 pid  2205 See the README file instructions to build the Kiwi samplerate module.
+2026-10-20 07:57:26,861 pid  2205 resampling from 11998.9 to 12000 Hz (ratio=1.000089)
+Block: 00000001, RSSI:  -86.9  Block: 00000002, RSSI:  -86.5  Block: 00000003, RSSI:  -86.9  Block: 00000004, RSSI:  -87.1  Block: 00000005, RSSI:  -94.0  Block: 00000006, RSSI:  -94.9  Block: 00000007, RSSI: -101.7  Block: 00000008, RSSI: -102.2  Block: 00000009, RSSI: -102.9  Block: 0000000a, RSSI: -102.2  Block: 0000000b, RSSI: -103.1  Block: 0000000c, RSSI: -101.8  Block: 0000000d, RSSI: -102.5  Block: 0000000e, RSSI: -102.3  Block: 0000000f, RSSI: -102.7  Block: 00000010, RSSI: -103.5  Block: 00000011, RSSI:  -99.1  Block: 00000012, RSSI: -100.0  Block: 00000013, RSSI:  -92.7  Block: 00000014, RSSI:  -91.5  Block: 00000015, RSSI:  -86.4  Block: 00000016, RSSI:  -86.4  Block: 00000017, RSSI:  -89.6  Block: 00000018, RSSI:  -87.3  Block: 00000019, RSSI:  -86.9  Block: 0000001a, RSSI:  -85.3  Block: 0000001b, RSSI:  -84.1  Block: 0000001c, RSSI:  -83.8  Block: 0000001d, RSSI:  -83.9  Block: 0000001e, RSSI:  -84.4  Block: 0000001f, RSSI:  -82.6  Block: 00000020, RSSI:  -82.4  Block: 00000021, RSSI:  -82.5  Block: 00000022, RSSI:  -81.0  Block: 00000023, RSSI:  -81.5  Block: 00000024, RSSI:  -81.6  Block: 00000025, RSSI:  -81.4  Block: 00000026, RSSI:  -82.7  Block: 00000027, RSSI:  -82.4  Block: 00000028, RSSI:  -82.2  Block: 00000029, RSSI:  -83.1  Block: 0000002a, RSSI:  -82.3  Block: 0000002b, RSSI:  -82.1  Block: 0000002c, RSSI:  -83.4  Block: 0000002d, RSSI:  -83.3  Block: 0000002e, RSSI:  -83.4  Block: 0000002f, RSSI:  -81.9  Block: 00000030, RSSI:  -83.1  Block: 00000031, RSSI:  -83.3  Block: 00000032, RSSI:  -83.7  Block: 00000033, RSSI:  -84.0  Block: 00000034, RSSI:  -83.4  Block: 00000035, RSSI:  -83.6  Block: 00000036, RSSI:  -83.4  Block: 00000037, RSSI:  -82.3  Block: 00000038, RSSI:  -83.0  Block: 00000039, RSSI:  -82.3  Block: 0000003a, RSSI:  -83.2  Block: 0000003b, RSSI:  -82.8  Block: 0000003c, RSSI:  -82.0  Block: 0000003d, RSSI:  -82.7  Block: 0000003e, RSSI:  -81.7  Block: 0000003f, RSSI:  -82.6  Block: 00000040, RSSI:  -81.0  Block: 00000041, RSSI:  -80.4  Block: 00000042, RSSI:  -80.5  Block: 00000043, RSSI:  -80.0  Block: 00000044, RSSI:  -79.7  Block: 00000045, RSSI:  -80.0  Block: 00000046, RSSI:  -78.9  Block: 00000047, RSSI:  -79.8  Block: 00000048, RSSI:  -79.2  Block: 00000049, RSSI:  -79.8  Block: 0000004a, RSSI:  -80.3  Block: 0000004b, RSSI:  -80.5  Block: 0000004c, RSSI:  -79.7  Block: 0000004d, RSSI:  -79.9  Block: 0000004e, RSSI:  -81.0  Block: 0000004f, RSSI:  -80.9  Block: 00000050, RSSI:  -80.4  Block: 00000051, RSSI:  -80.7  Block: 00000052, RSSI:  -80.4  Block: 00000053, RSSI:  -80.8  Block: 00000054, RSSI:  -79.9  Block: 00000055, RSSI:  -80.1  Block: 00000056, RSSI:  -80.7  Block: 00000057, RSSI:  -80.2  Block: 00000058, RSSI:  -81.6  Block: 00000059, RSSI:  -81.9  Block: 0000005a, RSSI:  -80.7  Block: 0000005b, RSSI:  -80.8  Block: 0000005c, RSSI:  -81.2  Block: 0000005d, RSSI:  -81.3  Block: 0000005e, RSSI:  -81.8  Block: 0000005f, RSSI:  -81.8  Block: 00000060, RSSI:  -82.5  Block: 00000061, RSSI:  -82.6  Block: 00000062, RSSI:  -83.1  Block: 00000063, RSSI:  -83.4  Block: 00000064, RSSI: -101.9  Block: 00000065, RSSI: -103.4  Block: 00000066, RSSI: -103.4  Block: 00000067, RSSI: -102.5  Block: 00000068, RSSI:  -90.9  Block: 00000069, RSSI:  -90.9  Block: 0000006a, RSSI:  -95.6  Block: 0000006b, RSSI:  -85.6  Block: 0000006c, RSSI:  -90.5  Block: 0000006d, RSSI:  -86.2  Block: 0000006e, RSSI:  -86.5  Block: 0000006f, RSSI:  -85.5  Block: 00000070, RSSI:  -87.7  Block: 00000071, RSSI:  -87.4  Block: 00000072, RSSI:  -86.6  Block: 00000073, RSSI:  -86.8  Block: 00000074, RSSI:  -86.5  Block: 00000075, RSSI:  -87.1  Block: 00000076, RSSI:  -86.7  Block: 00000077, RSSI:  -87.3  Block: 00000078, RSSI:  -86.5  Block: 00000079, RSSI:  -87.0  Block: 0000007a, RSSI:  -87.7  Block: 0000007b, RSSI:  -87.7  Block: 0000007c, RSSI:  -88.2  Block: 0000007d, RSSI:  -88.0  Block: 0000007e, RSSI:  -87.9  Block: 0000007f, RSSI:  -87.2  Block: 00000080, RSSI:  -88.0  Block: 00000081, RSSI:  -87.6  Block: 00000082, RSSI:  -88.7  Block: 00000083, RSSI:  -88.1  Block: 00000084, RSSI:  -88.0  Block: 00000085, RSSI:  -87.3  Block: 00000086, RSSI:  -87.5  Block: 00000087, RSSI:  -88.1  Block: 00000088, RSSI:  -87.6  Block: 00000089, RSSI:  -86.9  Block: 0000008a, RSSI:  -87.6  Block: 0000008b, RSSI:  -87.2  Block: 0000008c, RSSI:  -88.7  Block: 0000008d, RSSI:  -87.9  Block: 0000008e, RSSI:  -87.8  Block: 0000008f, RSSI:  -87.3  Block: 00000090, RSSI:  -87.2  Block: 00000091, RSSI:  -87.7  Block: 00000092, RSSI:  -86.7  Block: 00000093, RSSI:  -86.6  Block: 00000094, RSSI:  -87.3  Block: 00000095, RSSI:  -87.4  Block: 00000096, RSSI:  -87.0  Block: 00000097, RSSI:  -87.4  Block: 00000098, RSSI:  -86.8  Block: 00000099, RSSI:  -86.8  Block: 0000009a, RSSI:  -87.4  Block: 0000009b, RSSI:  -87.2  Block: 0000009c, RSSI:  -86.9  Block: 0000009d, RSSI:  -86.7  Block: 0000009e, RSSI:  -86.4  Block: 0000009f, RSSI:  -86.5  Block: 000000a0, RSSI:  -86.9  Block: 000000a1, RSSI:  -86.2  Block: 000000a2, RSSI:  -86.2  Block: 000000a3, RSSI:  -85.2  Block: 000000a4, RSSI:  -85.5  Block: 000000a5, RSSI:  -85.7  Block: 000000a6, RSSI:  -85.1  Block: 000000a7, RSSI:  -85.0  Block: 000000a8, RSSI:  -85.4  Block: 000000a9, RSSI:  -85.6  Block: 000000aa, RSSI:  -84.8  Block: 000000ab, RSSI:  -85.1  Block: 000000ac, RSSI:  -84.7  Block: 000000ad, RSSI:  -84.7  Block: 000000ae, RSSI:  -83.9  Block: 000000af, RSSI:  -84.5  Block: 000000b0, RSSI:  -85.0  Block: 000000b1, RSSI:  -85.5  Block: 000000b2, RSSI:  -84.9  Block: 000000b3, RSSI:  -85.8  Block: 000000b4, RSSI:  -85.7  Block: 000000b5, RSSI:  -85.9  Block: 000000b6, RSSI:  -86.8  Block: 000000b7, RSSI: -102.3  Block: 000000b8, RSSI: -101.8  Block: 000000b9, RSSI: -102.2  Block: 000000ba, RSSI: -102.0  Block: 000000bb, RSSI: -102.6  Block: 000000bc, RSSI: -102.5  Block: 000000bd, RSSI: -103.0  Block: 000000be, RSSI: -102.6  Block: 000000bf, RSSI: -103.2  Block: 000000c0, RSSI: -101.9  Block: 000000c1, RSSI:  -96.1  Block: 000000c2, RSSI:  -96.9  Block: 000000c3, RSSI:  -82.8  Block: 000000c4, RSSI:  -83.5  Block: 000000c5, RSSI:  -83.0  Block: 000000c6, RSSI:  -83.3  Block: 000000c7, RSSI:  -83.7  Block: 000000c8, RSSI:  -85.0  Block: 000000c9, RSSI:  -83.5  Block: 000000ca, RSSI:  -85.3  Block: 000000cb, RSSI:  -85.9  Block: 000000cc, RSSI:  -84.2  Block: 000000cd, RSSI:  -82.2  Block: 000000ce, RSSI:  -82.2  Block: 000000cf, RSSI:  -81.5  Block: 000000d0, RSSI:  -81.5  Block: 000000d1, RSSI:  -80.3  Block: 000000d2, RSSI:  -80.4  Block: 000000d3, RSSI:  -78.8  Block: 000000d4, RSSI:  -78.6  Block: 000000d5, RSSI:  -78.2  Block: 000000d6, RSSI:  -77.5  Block: 000000d7, RSSI:  -77.2  Block: 000000d8, RSSI:  -77.2  Block: 000000d9, RSSI:  -76.5  Block: 000000da, RSSI:  -76.7  Block: 000000db, RSSI:  -76.3  Block: 000000dc, RSSI:  -76.1  Block: 000000dd, RSSI:  -75.6  Block: 000000de, RSSI:  -76.3  Block: 000000df, RSSI:  -75.5  Block: 000000e0, RSSI:  -76.0  Block: 000000e1, RSSI:  -75.8  Block: 000000e2, RSSI:  -75.8  Block: 000000e3, RSSI:  -76.2  Block: 000000e4, RSSI:  -75.8  Block: 000000e5, RSSI:  -76.2  Block: 000000e6, RSSI:  -76.1  Block: 000000e7, RSSI:  -76.1  Block: 000000e8, RSSI:  -76.5  Block: 000000e9, RSSI:  -76.4  Block: 000000ea, RSSI:  -76.5  Block: 000000eb, RSSI:  -77.1  Block: 000000ec, RSSI:  -77.2  Block: 000000ed, RSSI:  -77.7  Block: 000000ee, RSSI:  -77.9  Block: 000000ef, RSSI:  -78.7  Block: 000000f0, RSSI:  -79.3  Block: 000000f1, RSSI:  -80.2  Block: 000000f2, RSSI:  -80.6  Block: 000000f3, RSSI:  -81.1  Block: 000000f4, RSSI:  -82.2  Block: 000000f5, RSSI:  -82.3  Block: 000000f6, RSSI:  -83.0  Block: 000000f7, RSSI:  -83.8  Block: 000000f8, RSSI:  -83.4  Block: 000000f9, RSSI:  -83.8  Block: 000000fa, RSSI:  -83.7  Block: 000000fb, RSSI:  -81.9  Block: 000000fc, RSSI:  -81.1  Block: 000000fd, RSSI:  -80.2  Block: 000000fe, RSSI:  -79.3  Block: 000000ff, RSSI:  -78.6  Block: 00000100, RSSI:  -77.6  Block: 00000101, RSSI:  -76.9  Block: 00000102, RSSI:  -76.3  Block: 00000103, RSSI:  -75.9  Block: 00000104, RSSI:  -75.7  Block: 00000105, RSSI:  -75.2  Block: 00000106, RSSI:  -74.6  Block: 00000107, RSSI:  -74.5  Block: 00000108, RSSI:  -74.0  Block: 00000109, RSSI:  -73.8  Block: 0000010a, RSSI:  -73.7  Block: 0000010b, RSSI:  -73.2  Block: 0000010c, RSSI:  -73.0  Block: 0000010d, RSSI:  -83.6  Block: 0000010e, RSSI:  -83.7  Block: 0000010f, RSSI:  -83.4  Block: 00000110, RSSI:  -83.6  Block: 00000111, RSSI:  -84.2  Block: 00000112, RSSI:  -84.1  Block: 00000113, RSSI: -102.5  Block: 00000114, RSSI: -102.5  Block: 00000115, RSSI: -102.5  Block: 00000116, RSSI: -103.6  Block: 00000117, RSSI: -103.3  Block: 00000118, RSSI:  -93.8  Block: 00000119, RSSI:  -93.1  Block: 0000011a, RSSI:  -93.1  Block: 0000011b, RSSI:  -87.1  Block: 0000011c, RSSI:  -87.3  Block: 0000011d, RSSI:  -87.2  Block: 0000011e, RSSI:  -86.3  Block: 0000011f, RSSI:  -85.8  Block: 00000120, RSSI:  -87.5  Block: 00000121, RSSI:  -88.5  Block: 00000122, RSSI:  -87.9  Block: 00000123, RSSI:  -87.6  Block: 00000124, RSSI:  -86.8  Block: 00000125, RSSI:  -86.6  Block: 00000126, RSSI:  -86.3  Block: 00000127, RSSI:  -87.5  Block: 00000128, RSSI:  -86.5  Block: 00000129, RSSI:  -84.4  Block: 0000012a, RSSI:  -85.7  Block: 0000012b, RSSI:  -85.3  Block: 0000012c, RSSI:  -85.8  Block: 0000012d, RSSI:  -85.3  Block: 0000012e, RSSI:  -86.9  Block: 0000012f, RSSI:  -86.8  Block: 00000130, RSSI:  -87.3  Block: 00000131, RSSI:  -86.9  Block: 00000132, RSSI:  -87.0  Block: 00000133, RSSI:  -86.2  Block: 00000134, RSSI:  -86.0  Block: 00000135, RSSI:  -85.7  Block: 00000136, RSSI:  -85.5  Block: 00000137, RSSI:  -85.3  Block: 00000138, RSSI:  -85.9  Block: 00000139, RSSI:  -86.1  Block: 0000013a, RSSI:  -86.2  Block: 0000013b, RSSI:  -85.7  Block: 0000013c, RSSI:  -86.6  Block: 0000013d, RSSI:  -85.6  Block: 0000013e, RSSI:  -86.2  Block: 0000013f, RSSI:  -85.4  Block: 00000140, RSSI:  -87.1  Block: 00000141, RSSI:  -86.3  Block: 00000142, RSSI:  -86.0  Block: 00000143, RSSI:  -87.1  Block: 00000144, RSSI:  -87.7  Block: 00000145, RSSI:  -89.3  Block: 00000146, RSSI:  -89.0  Block: 00000147, RSSI:  -88.5  Block: 00000148, RSSI:  -88.6  Block: 00000149, RSSI:  -87.8  Block: 0000014a, RSSI:  -89.2  Block: 0000014b, RSSI:  -90.7  Block: 0000014c, RSSI:  -89.8  Block: 0000014d, RSSI:  -90.0  Block: 0000014e, RSSI:  -90.2  Block: 0000014f, RSSI:  -90.2  Block: 00000150, RSSI:  -89.9  Block: 00000151, RSSI:  -89.4  Block: 00000152, RSSI:  -88.0  Block: 00000153, RSSI:  -88.5  Block: 00000154, RSSI:  -90.0  Block: 00000155, RSSI:  -89.8  Block: 00000156, RSSI:  -90.6  Block: 00000157, RSSI:  -89.1  Block: 00000158, RSSI:  -88.7  Block: 00000159, RSSI:  -88.3  Block: 0000015a, RSSI:  -89.6  Block: 0000015b, RSSI:  -88.6  Block: 0000015c, RSSI:  -89.3  Block: 0000015d, RSSI:  -90.1  Block: 0000015e, RSSI:  -90.0  Block: 0000015f, RSSI:  -89.9  Block: 00000160, RSSI:  -89.6  Block: 00000161, RSSI:  -90.3  Block: 00000162, RSSI:  -89.1  Block: 00000163, RSSI:  -90.0  Block: 00000164, RSSI:  -90.6  Block: 00000165, RSSI:  -98.1  Block: 00000166, RSSI:  -99.9  Block: 00000167, RSSI: -103.1  Block: 00000168, RSSI: -102.2  Block: 00000169, RSSI: -103.3  Block: 0000016a, RSSI: -101.0  Block: 0000016b, RSSI: -103.2  Block: 0000016c, RSSI: -102.5  Block: 0000016d, RSSI: -102.5  Block: 0000016e, RSSI: -103.5  Block: 0000016f, RSSI: -102.3  Block: 00000170, RSSI: -102.4  Block: 00000171, RSSI:  -93.6  Block: 00000172, RSSI:  -94.1  Block: 00000173, RSSI:  -74.4  Block: 00000174, RSSI:  -73.8  Block: 00000175, RSSI:  -73.7  Block: 00000176, RSSI:  -73.1  Block: 00000177, RSSI:  -72.8  Block: 00000178, RSSI:  -72.4  Block: 00000179, RSSI:  -72.0  Block: 0000017a, RSSI:  -71.7  Block: 0000017b, RSSI:  -71.6  Block: 0000017c, RSSI:  -71.4  Block: 0000017d, RSSI:  -71.5  Block: 0000017e, RSSI:  -71.1  Block: 0000017f, RSSI:  -71.3  Block: 00000180, RSSI:  -71.2  Block: 00000181, RSSI:  -71.4  Block: 00000182, RSSI:  -71.5  Block: 00000183, RSSI:  -71.3  Block: 00000184, RSSI:  -71.5  Block: 00000185, RSSI:  -72.1  Block: 00000186, RSSI:  -72.4  Block: 00000187, RSSI:  -72.8  Block: 00000188, RSSI:  -73.1  Block: 00000189, RSSI:  -73.7  Block: 0000018a, RSSI:  -73.9  Block: 0000018b, RSSI:  -74.1  Block: 0000018c, RSSI:  -74.0  Block: 0000018d, RSSI:  -75.1  Block: 0000018e, RSSI:  -75.4  Block: 0000018f, RSSI:  -75.8  Block: 00000190, RSSI:  -76.0  Block: 00000191, RSSI:  -76.3  Block: 00000192, RSSI:  -75.9  Block: 00000193, RSSI:  -76.1  Block: 00000194, RSSI:  -75.3  Block: 00000195, RSSI:  -76.0  Block: 00000196, RSSI:  -75.0  Block: 00000197, RSSI:  -74.2  Block: 00000198, RSSI:  -74.2  Block: 00000199, RSSI:  -74.3  Block: 0000019a, RSSI:  -73.7  Block: 0000019b, RSSI:  -73.3  Block: 0000019c, RSSI:  -73.3  Block: 0000019d, RSSI:  -73.5  Block: 0000019e, RSSI:  -73.0  Block: 0000019f, RSSI:  -73.2  Block: 000001a0, RSSI:  -72.7  Block: 000001a1, RSSI:  -72.7  Block: 000001a2, RSSI:  -72.8  Block: 000001a3, RSSI:  -73.2  Block: 000001a4, RSSI:  -73.4  Block: 000001a5, RSSI:  -73.8  Block: 000001a6, RSSI:  -74.7  Block: 000001a7, RSSI:  -74.1  Block: 000001a8, RSSI:  -74.8  Block: 000001a9, RSSI:  -75.9  Block: 000001aa, RSSI:  -75.7  Block: 000001ab, RSSI:  -75.6  Block: 000001ac, RSSI:  -75.7  Block: 000001ad, RSSI:  -76.3  Block: 000001ae, RSSI:  -75.9  Block: 000001af, RSSI:  -75.3  Block: 000001b0, RSSI:  -75.5  Block: 000001b1, RSSI:  -74.2  Block: 000001b2, RSSI:  -74.4  Block: 000001b3, RSSI:  -74.2  Block: 000001b4, RSSI:  -73.5  Block: 000001b5, RSSI:  -73.5  Block: 000001b6, RSSI:  -73.4  Block: 000001b7, RSSI:  -72.8  Block: 000001b8, RSSI:  -72.9  Block: 000001b9, RSSI:  -72.7  Block: 000001ba, RSSI:  -72.6  Block: 000001bb, RSSI:  -72.3  Block: 000001bc, RSSI:  -72.2  Block: 000001bd, RSSI:  -87.1  Block: 000001be, RSSI:  -87.9  Block: 000001bf, RSSI:  -87.7  Block: 000001c0, RSSI:  -87.4  Block: 000001c1, RSSI:  -87.1  Block: 000001c2, RSSI:  -86.7  Block: 000001c3, RSSI: -102.7  Block: 000001c4, RSSI: -101.8  Block: 000001c5, RSSI: -102.6  Block: 000001c6, RSSI: -101.7  Block: 000001c7, RSSI: -101.2  Block: 000001c8, RSSI:  -93.4  Block: 000001c9, RSSI:  -92.9  Block: 000001ca, RSSI:  -91.8  Block: 000001cb, RSSI:  -83.0  Block: 000001cc, RSSI:  -83.8  Block: 000001cd, RSSI:  -82.4  Block: 000001ce, RSSI:  -84.4  Block: 000001cf, RSSI:  -83.9  Block: 000001d0, RSSI:  -83.3  Block: 000001d1, RSSI:  -82.2  Block: 000001d2, RSSI:  -83.1  Block: 000001d3, RSSI:  -83.0  Block: 000001d4, RSSI:  -83.2  Block: 000001d5, RSSI:  -87.0  Block: 000001d6, RSSI:  -85.1  Block: 000001d7, RSSI:  -84.4  Block: 000001d8, RSSI:  -85.0  Block: 000001d9, RSSI:  -85.9  Block: 000001da, RSSI:  -84.9  Block: 000001db, RSSI:  -85.9  Block: 000001dc, RSSI:  -85.6  Block: 000001dd, RSSI:  -85.5  Block: 000001de, RSSI:  -83.9  Block: 000001df, RSSI:  -83.9  Block: 000001e0, RSSI:  -85.6  Block: 000001e1, RSSI:  -83.3  Block: 000001e2, RSSI:  -84.9  Block: 000001e3, RSSI:  -84.6  Block: 000001e4, RSSI:  -84.5  Block: 000001e5, RSSI:  -85.1  Block: 000001e6, RSSI:  -84.6  Block: 000001e7, RSSI:  -85.2  Block: 000001e8, RSSI:  -84.6  Block: 000001e9, RSSI:  -84.1  Block: 000001ea, RSSI:  -84.4  Block: 000001eb, RSSI:  -84.8  Block: 000001ec, RSSI:  -87.5  Block: 000001ed, RSSI:  -85.7  Block: 000001ee, RSSI:  -86.8  Block: 000001ef, RSSI:  -86.2  Block: 000001f0, RSSI:  -85.1  Block: 000001f1, RSSI:  -85.6  Block: 000001f2, RSSI:  -86.3  Block: 000001f3, RSSI:  -84.8  Block: 000001f4, RSSI:  -85.7  Block: 000001f5, RSSI:  -86.6  Block: 000001f6, RSSI:  -86.9  Block: 000001f7, RSSI:  -87.8  Block: 000001f8, RSSI:  -85.1  Block: 000001f9, RSSI:  -89.3  Block: 000001fa, RSSI:  -85.9  Block: 000001fb, RSSI:  -87.1  Block: 000001fc, RSSI:  -87.1  Block: 000001fd, RSSI:  -88.1  Block: 000001fe, RSSI:  -87.4  Block: 000001ff, RSSI:  -87.2  Block: 00000200, RSSI:  -86.5  Block: 00000201, RSSI:  -84.8  Block: 00000202, RSSI:  -89.8  Block: 00000203, RSSI:  -87.7  Block: 00000204, RSSI:  -88.1  Block: 00000205, RSSI:  -89.1  Block: 00000206, RSSI:  -87.8  Block: 00000207, RSSI:  -88.3  Block: 00000208, RSSI:  -89.7  Block: 00000209, RSSI:  -87.8  Block: 0000020a, RSSI:  -88.4  Block: 0000020b, RSSI:  -86.4  Block: 0000020c, RSSI:  -89.2  Block: 0000020d, RSSI:  -88.7  Block: 0000020e, RSSI:  -87.2  Block: 0000020f, RSSI:  -88.4  Block: 00000210, RSSI:  -86.3  Block: 00000211, RSSI:  -87.5  
+kiwirecorder exit code: 0
+Produced WAV: /tmp/kiwi_rec/rec_emeraldsdr_14074.wav (2166828 bytes)
+Selected recording: /tmp/kiwi_rec/rec_emeraldsdr_14074.wav
+
+
+=== Decode phase ===
+Recording: /tmp/kiwi_rec/rec_emeraldsdr_14074.wav host=emeraldsdr.ddns.net:8073 (Carlow, Ireland (Europe)) freq=14074 kHz USB
+WAV: 12000 Hz, 1 channel(s), 16-bit, 90.3 s, 2166784 bytes
+Windows: 38 x 15 s, stride 2 s (FT8 slots are 15 s, aligned to UTC :00/:15/:30/:45;
+the 2 s stride guarantees some window starts within 2 s before every slot boundary,
+so each transmission is fully inside at least one window despite the arbitrary record start).
+
+[window offset   0 s] decode_ft8: 0 message(s)
+
+[window offset   2 s] decode_ft8: 19 message(s)
+000000 +17.0 +1.52  291 ~  CQ IW2NEF JN46
+000000 +16.5 +1.44 1306 ~  CQ VK SN5N KO11
+000000 +16.5 +1.44 1006 ~  ZL1MED OZ4ACK JO65
+000000 +15.5 +1.28 2891 ~  EA4CPM <...> -09
+000000 +15.0 +2.48 1197 ~  ON3HVP LB7YK +20
+000000 +15.0 +1.44 2469 ~  M9RPO OE3EHS JN87
+000000 +14.5 +1.36  619 ~  F4FDR DG6TOM JN58
+000000 +14.0 +2.48 1750 ~  BD2BN F4DIA R-15
+000000 +14.0 +1.44 1066 ~  CQ P4/WE9V
+000000 +14.0 +1.44 1494 ~  CQ S55X JN76
+000000 +13.5 +1.44  947 ~  BI4JJO DH1AKG JO60
+000000 +13.5 +1.36 2722 ~  PD3CFG F5OYA/P JN13
+000000 +13.5 +1.36 2034 ~  V31DL DL5ARG JO60
+000000 +13.5 +1.36  788 ~  CQ CT7BRV IM58
+000000 +12.5 +1.36 1800 ~  TF4CU EA4ITM IN80
+000000 +12.0 +1.52 1116 ~  OE8PPL SM7DUZ R+07
+000000 +11.0 +1.36 1456 ~  CQ HA1ZW JN86
+000000 +10.0 +1.36  725 ~  SV5AZK S51NO -03
+000000 +09.0 +1.44 2191 ~  IU1WVQ OH3BYZ RR73
+
+[window offset   4 s] decode_ft8: 19 message(s)
+000000 +17.0 -0.72 2891 ~  EA4CPM <...> -09
+000000 +16.5 -0.48  291 ~  CQ IW2NEF JN46
+000000 +16.0 -0.56 1006 ~  ZL1MED OZ4ACK JO65
+000000 +16.0 -0.56 1306 ~  CQ VK SN5N KO11
+000000 +15.5 -0.64 1800 ~  TF4CU EA4ITM IN80
+000000 +15.5 -0.56 2469 ~  M9RPO OE3EHS JN87
+000000 +15.0 -0.64  788 ~  CQ CT7BRV IM58
+000000 +14.5 -0.56 1494 ~  CQ S55X JN76
+000000 +14.0 +0.48 1750 ~  BD2BN F4DIA R-15
+000000 +14.0 +0.48 1197 ~  ON3HVP LB7YK +20
+000000 +13.5 -0.64  619 ~  F4FDR DG6TOM JN58
+000000 +13.0 -0.48 1116 ~  OE8PPL SM7DUZ R+07
+000000 +13.0 -0.56 1066 ~  CQ P4/WE9V
+000000 +13.0 -0.64 2034 ~  V31DL DL5ARG JO60
+000000 +13.0 -0.56  947 ~  BI4JJO DH1AKG JO60
+000000 +12.5 -0.72 2722 ~  PD3CFG F5OYA/P JN13
+000000 +11.0 -0.64 1456 ~  CQ HA1ZW JN86
+000000 +09.5 -0.64  725 ~  SV5AZK S51NO -03
+000000 +09.0 -0.56 2191 ~  IU1WVQ OH3BYZ RR73
+
+[window offset   6 s] decode_ft8: 2 message(s)
+000000 +13.5 -1.52 1197 ~  ON3HVP LB7YK +20
+000000 +13.5 -1.52 1750 ~  BD2BN F4DIA R-15
+
+[window offset   8 s] decode_ft8: 0 message(s)
+
+[window offset  10 s] decode_ft8: 0 message(s)
+
+[window offset  12 s] decode_ft8: 0 message(s)
+
+[window offset  14 s] decode_ft8: 0 message(s)
+
+[window offset  16 s] decode_ft8: 12 message(s)
+000000 +19.0 +2.72  788 ~  CT7BRV EA2BHE IN83
+000000 +15.0 +2.40  384 ~  RN3YN IK4LZH JN54
+000000 +13.5 +2.16 1150 ~  BG2GFW LY3PW RRR
+000000 +13.0 +2.32 2569 ~  RW9UKK DK0ULR JN58
+000000 +12.5 +2.32 1944 ~  E79KO UA3PAB KO84
+000000 +11.5 +2.16 1497 ~  SM7DUZ OE8PPL RR73
+000000 +11.0 +2.40 1881 ~  CQ EB3DIY JN01
+000000 +11.0 +2.32 1069 ~  S55X IN3ADG -23
+000000 +09.5 +2.56  881 ~  IU4FLR V31DL 73
+000000 +09.5 +2.40  988 ~  ON7YC PY7ZC RR73
+000000 +08.0 +2.32  588 ~  H49A CT4NH IM58
+000000 +07.5 +2.32 2397 ~  DD5TL EA5DQW IM99
+
+[window offset  18 s] decode_ft8: 12 message(s)
+000000 +19.0 +0.72  788 ~  CT7BRV EA2BHE IN83
+000000 +15.0 +0.40  384 ~  RN3YN IK4LZH JN54
+000000 +13.5 +0.16 1150 ~  BG2GFW LY3PW RRR
+000000 +13.0 +0.32 2569 ~  RW9UKK DK0ULR JN58
+000000 +12.5 +0.32 1944 ~  E79KO UA3PAB KO84
+000000 +11.5 +0.16 1497 ~  SM7DUZ OE8PPL RR73
+000000 +11.0 +0.32 1069 ~  S55X IN3ADG -23
+000000 +11.0 +0.40 1881 ~  CQ EB3DIY JN01
+000000 +10.0 +0.56  881 ~  IU4FLR V31DL 73
+000000 +09.5 +0.40  988 ~  ON7YC PY7ZC RR73
+000000 +08.0 +0.32  588 ~  H49A CT4NH IM58
+000000 +07.5 +0.32 2397 ~  DD5TL EA5DQW IM99
+
+[window offset  20 s] decode_ft8: 8 message(s)
+000000 +19.0 -1.28  788 ~  CT7BRV EA2BHE IN83
+000000 +15.0 -1.60  384 ~  RN3YN IK4LZH JN54
+000000 +13.5 -1.44  881 ~  IU4FLR V31DL 73
+000000 +10.5 -1.60 2397 ~  DD5TL EA5DQW IM99
+000000 +10.5 -1.60 1881 ~  CQ EB3DIY JN01
+000000 +10.0 -1.60 1069 ~  S55X IN3ADG -23
+000000 +09.5 -1.60 1944 ~  E79KO UA3PAB KO84
+000000 +08.5 -1.60  988 ~  ON7YC PY7ZC RR73
+
+[window offset  22 s] decode_ft8: 0 message(s)
+
+[window offset  24 s] decode_ft8: 0 message(s)
+
+[window offset  26 s] decode_ft8: 0 message(s)
+
+[window offset  28 s] decode_ft8: 0 message(s)
+
+[window offset  30 s] decode_ft8: 1 message(s)
+000000 +13.0 +3.04 1422 ~  CQ SP3DOF JO72
+
+[window offset  32 s] decode_ft8: 18 message(s)
+000000 +17.0 +1.44 2469 ~  M9RPO OE3EHS JN87
+000000 +16.5 +1.28 2891 ~  EA4CPM <...> -09
+000000 +16.5 +1.36 1800 ~  TF4CU EA4ITM IN80
+000000 +16.5 +1.36 2722 ~  BG3GP OH2XO -10
+000000 +15.5 +3.04 1750 ~  BD2BN F4DIA 73
+000000 +15.0 +1.36  703 ~  PY1EW SM6UQL -01
+000000 +15.0 +2.16 1197 ~  ON3HVP LB7YK RR73
+000000 +14.5 +1.52  291 ~  CQ IW2NEF JN46
+000000 +14.0 +1.44 1497 ~  CQ S55X JN76
+000000 +13.5 +1.44  947 ~  BI4JJO DH1AKG JO60
+000000 +13.0 +1.36  788 ~  CQ CT7BRV IM58
+000000 +12.5 +1.04 1422 ~  CQ SP3DOF JO72
+000000 +11.5 +1.36 2009 ~  PY7ZC IK1QLD JN34
+000000 +11.5 +1.60 1006 ~  ZL1MED OZ4ACK JO65
+000000 +10.5 +1.44 1066 ~  CQ P4/WE9V
+000000 +09.5 +1.36 1134 ~  CQ IU0SIJ/QRP
+000000 +09.5 +1.44 1247 ~  CQ OE1EZA JN88
+000000 +05.5 +1.52 1334 ~  LZ1MIT DG1RMY JO62
+
+[window offset  34 s] decode_ft8: 18 message(s)
+000000 +18.0 -0.56 2469 ~  M9RPO OE3EHS JN87
+000000 +18.0 -0.72 2891 ~  EA4CPM <...> -09
+000000 +16.0 -0.64 2722 ~  BG3GP OH2XO -10
+000000 +15.0 +0.16 1197 ~  ON3HVP LB7YK RR73
+000000 +15.0 -0.64 1800 ~  TF4CU EA4ITM IN80
+000000 +14.5 -0.64  703 ~  PY1EW SM6UQL -01
+000000 +14.5 -0.48  291 ~  CQ IW2NEF JN46
+000000 +14.0 -0.64  788 ~  CQ CT7BRV IM58
+000000 +13.5 -0.56 1494 ~  CQ S55X JN76
+000000 +13.5 -0.64 2009 ~  PY7ZC IK1QLD JN34
+000000 +13.0 -0.56  947 ~  BI4JJO DH1AKG JO60
+000000 +13.0 +1.04 1750 ~  BD2BN F4DIA 73
+000000 +12.0 -0.40 1006 ~  ZL1MED OZ4ACK JO65
+000000 +11.0 -0.96 1422 ~  CQ SP3DOF JO72
+000000 +11.0 -0.56 1066 ~  CQ P4/WE9V
+000000 +09.0 -0.56 1247 ~  CQ OE1EZA JN88
+000000 +09.0 -0.64 1134 ~  CQ IU0SIJ/QRP
+000000 +06.0 -0.48 1334 ~  LZ1MIT DG1RMY JO62
+
+[window offset  36 s] decode_ft8: 1 message(s)
+000000 +11.0 -0.96 1750 ~  BD2BN F4DIA 73
+
+[window offset  38 s] decode_ft8: 0 message(s)
+
+[window offset  40 s] decode_ft8: 0 message(s)
+
+[window offset  42 s] decode_ft8: 0 message(s)
+
+[window offset  44 s] decode_ft8: 0 message(s)
+
+[window offset  46 s] decode_ft8: 16 message(s)
+000000 +17.5 +2.32 1897 ~  H49A CT4NH IM58
+000000 +15.0 +2.40  384 ~  CQ IK4LZH JN54
+000000 +15.0 +2.32 1069 ~  S55X IN3ADG -23
+000000 +14.5 +2.32 1622 ~  CQ F4FDR JN04
+000000 +14.0 +2.32 1944 ~  E79KO UA3PAB KO84
+000000 +14.0 +2.32 2569 ~  RW9UKK DK0ULR JN58
+000000 +13.0 +2.08 1150 ~  CQ LY3PW KO05
+000000 +12.0 +2.40 1722 ~  BG2KSI IV3UWA JN66
+000000 +11.5 +2.32 2781 ~  S51NO DL1BBO JO43
+000000 +11.0 +2.48 2459 ~  H49A OH1JO R-13
+000000 +09.5 +1.92  528 ~  E79KO RZ7KR -09
+000000 +09.5 +1.84 1500 ~  DB2QM F4NHL RR73
+000000 +09.0 +2.72 1550 ~  OK2AB EA2BHE IN83
+000000 +08.5 +2.48 2712 ~  C5R JH1FYC PM95
+000000 +08.0 +2.32 2397 ~  DD5TL EA5DQW R-13
+000000 +07.5 +2.08  881 ~  CQ OM7AMA JN98
+
+[window offset  48 s] decode_ft8: 16 message(s)
+000000 +17.5 +0.32 1897 ~  H49A CT4NH IM58
+000000 +15.0 +0.40  384 ~  CQ IK4LZH JN54
+000000 +15.0 +0.32 1069 ~  S55X IN3ADG -23
+000000 +14.5 +0.32 1622 ~  CQ F4FDR JN04
+000000 +14.0 +0.32 2569 ~  RW9UKK DK0ULR JN58
+000000 +14.0 +0.32 1944 ~  E79KO UA3PAB KO84
+000000 +13.0 +0.08 1150 ~  CQ LY3PW KO05
+000000 +12.0 +0.40 1722 ~  BG2KSI IV3UWA JN66
+000000 +11.5 +0.32 2781 ~  S51NO DL1BBO JO43
+000000 +11.0 +0.48 2459 ~  H49A OH1JO R-13
+000000 +10.5 -0.08  528 ~  E79KO RZ7KR -09
+000000 +09.0 -0.16 1500 ~  DB2QM F4NHL RR73
+000000 +09.0 +0.48 2712 ~  C5R JH1FYC PM95
+000000 +09.0 +0.72 1550 ~  OK2AB EA2BHE IN83
+000000 +08.0 +0.32 2397 ~  DD5TL EA5DQW R-13
+000000 +07.5 +0.08  878 ~  CQ OM7AMA JN98
+
+[window offset  50 s] decode_ft8: 11 message(s)
+000000 +16.0 -1.60  384 ~  CQ IK4LZH JN54
+000000 +13.5 -1.28 1550 ~  OK2AB EA2BHE IN83
+000000 +13.0 -1.52 2712 ~  C5R JH1FYC PM95
+000000 +12.5 -1.60 1719 ~  BG2KSI IV3UWA JN66
+000000 +11.5 -1.52 2459 ~  H49A OH1JO R-13
+000000 +11.0 -1.60 2397 ~  DD5TL EA5DQW R-13
+000000 +11.0 -1.60 1944 ~  E79KO UA3PAB KO84
+000000 +10.5 -1.60 2569 ~  RW9UKK DK0ULR JN58
+000000 +09.5 -1.60 1622 ~  CQ F4FDR JN04
+000000 +08.5 -1.60 1069 ~  S55X IN3ADG -23
+000000 +07.0 -1.60 1897 ~  H49A CT4NH IM58
+
+[window offset  52 s] decode_ft8: 0 message(s)
+
+[window offset  54 s] decode_ft8: 0 message(s)
+
+[window offset  56 s] decode_ft8: 0 message(s)
+
+[window offset  58 s] decode_ft8: 0 message(s)
+
+[window offset  60 s] decode_ft8: 1 message(s)
+000000 +12.5 +2.96 1422 ~  CQ SP3DOF JO72
+
+[window offset  62 s] decode_ft8: 13 message(s)
+000000 +16.0 +1.36  703 ~  PY1EW SM6UQL -01
+000000 +15.5 +1.28 2891 ~  <...> DA125RH RR73
+000000 +15.5 +1.52 1006 ~  ZL1MED OZ4ACK JO65
+000000 +15.0 +2.24 1197 ~  ON3HVP LB7YK 73
+000000 +13.0 +1.44 1497 ~  CQ S55X JN76
+000000 +13.0 +1.36 2722 ~  BG3GP OH2XO RR73
+000000 +12.5 +1.36 2009 ~  PY7ZC IK1QLD R-14
+000000 +12.5 +0.96 1422 ~  CQ SP3DOF JO72
+000000 +12.5 +1.36  788 ~  JA1LLG CT7BRV -15
+000000 +10.5 +2.16 1834 ~  RV9CD SP2KW JO92
+000000 +10.0 +1.44 2469 ~  M9RPO OE3EHS JN87
+000000 +09.5 +1.52  291 ~  CQ IW2NEF JN46
+000000 +08.5 +1.36 1134 ~  CQ IU0SIJ/QRP
+
+[window offset  64 s] decode_ft8: 13 message(s)
+000000 +17.0 -0.72 2891 ~  <...> DA125RH RR73
+000000 +15.5 -0.48 1006 ~  ZL1MED OZ4ACK JO65
+000000 +15.0 +0.24 1197 ~  ON3HVP LB7YK 73
+000000 +15.0 -0.64  703 ~  PY1EW SM6UQL -01
+000000 +13.0 -1.04 1422 ~  CQ SP3DOF JO72
+000000 +13.0 -0.64 2722 ~  BG3GP OH2XO RR73
+000000 +13.0 -0.56 1497 ~  CQ S55X JN76
+000000 +12.5 -0.64  788 ~  JA1LLG CT7BRV -15
+000000 +12.5 -0.64 2009 ~  PY7ZC IK1QLD R-14
+000000 +11.5 -0.56 2469 ~  M9RPO OE3EHS JN87
+000000 +10.5 +0.16 1834 ~  RV9CD SP2KW JO92
+000000 +10.0 -0.48  291 ~  CQ IW2NEF JN46
+000000 +08.0 -0.64 1134 ~  CQ IU0SIJ/QRP
+
+[window offset  66 s] decode_ft8: 0 message(s)
+
+[window offset  68 s] decode_ft8: 0 message(s)
+
+[window offset  70 s] decode_ft8: 0 message(s)
+
+[window offset  72 s] decode_ft8: 0 message(s)
+
+[window offset  74 s] decode_ft8: 0 message(s)
+
+=== SUMMARY ===
+Host used: emeraldsdr.ddns.net:8073 (Carlow, Ireland (Europe)), frequency: 14074 kHz USB
+Total decode events (incl. duplicates across overlapping windows): 180
+Unique FT8 messages decoded: 58
+  000000 +17.0 +1.52  291 ~  CQ IW2NEF JN46
+  000000 +16.5 +1.44 1306 ~  CQ VK SN5N KO11
+  000000 +16.5 +1.44 1006 ~  ZL1MED OZ4ACK JO65
+  000000 +15.5 +1.28 2891 ~  EA4CPM <...> -09
+  000000 +15.0 +2.48 1197 ~  ON3HVP LB7YK +20
+  000000 +15.0 +1.44 2469 ~  M9RPO OE3EHS JN87
+  000000 +14.5 +1.36  619 ~  F4FDR DG6TOM JN58
+  000000 +14.0 +2.48 1750 ~  BD2BN F4DIA R-15
+  000000 +14.0 +1.44 1066 ~  CQ P4/WE9V
+  000000 +14.0 +1.44 1494 ~  CQ S55X JN76
+  000000 +13.5 +1.44  947 ~  BI4JJO DH1AKG JO60
+  000000 +13.5 +1.36 2722 ~  PD3CFG F5OYA/P JN13
+  000000 +13.5 +1.36 2034 ~  V31DL DL5ARG JO60
+  000000 +13.5 +1.36  788 ~  CQ CT7BRV IM58
+  000000 +12.5 +1.36 1800 ~  TF4CU EA4ITM IN80
+  000000 +12.0 +1.52 1116 ~  OE8PPL SM7DUZ R+07
+  000000 +11.0 +1.36 1456 ~  CQ HA1ZW JN86
+  000000 +10.0 +1.36  725 ~  SV5AZK S51NO -03
+  000000 +09.0 +1.44 2191 ~  IU1WVQ OH3BYZ RR73
+  000000 +19.0 +2.72  788 ~  CT7BRV EA2BHE IN83
+  000000 +15.0 +2.40  384 ~  RN3YN IK4LZH JN54
+  000000 +13.5 +2.16 1150 ~  BG2GFW LY3PW RRR
+  000000 +13.0 +2.32 2569 ~  RW9UKK DK0ULR JN58
+  000000 +12.5 +2.32 1944 ~  E79KO UA3PAB KO84
+  000000 +11.5 +2.16 1497 ~  SM7DUZ OE8PPL RR73
+  000000 +11.0 +2.40 1881 ~  CQ EB3DIY JN01
+  000000 +11.0 +2.32 1069 ~  S55X IN3ADG -23
+  000000 +09.5 +2.56  881 ~  IU4FLR V31DL 73
+  000000 +09.5 +2.40  988 ~  ON7YC PY7ZC RR73
+  000000 +08.0 +2.32  588 ~  H49A CT4NH IM58
+  000000 +07.5 +2.32 2397 ~  DD5TL EA5DQW IM99
+  000000 +13.0 +3.04 1422 ~  CQ SP3DOF JO72
+  000000 +16.5 +1.36 2722 ~  BG3GP OH2XO -10
+  000000 +15.5 +3.04 1750 ~  BD2BN F4DIA 73
+  000000 +15.0 +1.36  703 ~  PY1EW SM6UQL -01
+  000000 +15.0 +2.16 1197 ~  ON3HVP LB7YK RR73
+  000000 +11.5 +1.36 2009 ~  PY7ZC IK1QLD JN34
+  000000 +09.5 +1.36 1134 ~  CQ IU0SIJ/QRP
+  000000 +09.5 +1.44 1247 ~  CQ OE1EZA JN88
+  000000 +05.5 +1.52 1334 ~  LZ1MIT DG1RMY JO62
+  000000 +15.0 +2.40  384 ~  CQ IK4LZH JN54
+  000000 +14.5 +2.32 1622 ~  CQ F4FDR JN04
+  000000 +13.0 +2.08 1150 ~  CQ LY3PW KO05
+  000000 +12.0 +2.40 1722 ~  BG2KSI IV3UWA JN66
+  000000 +11.5 +2.32 2781 ~  S51NO DL1BBO JO43
+  000000 +11.0 +2.48 2459 ~  H49A OH1JO R-13
+  000000 +09.5 +1.92  528 ~  E79KO RZ7KR -09
+  000000 +09.5 +1.84 1500 ~  DB2QM F4NHL RR73
+  000000 +09.0 +2.72 1550 ~  OK2AB EA2BHE IN83
+  000000 +08.5 +2.48 2712 ~  C5R JH1FYC PM95
+  000000 +08.0 +2.32 2397 ~  DD5TL EA5DQW R-13
+  000000 +07.5 +2.08  881 ~  CQ OM7AMA JN98
+  000000 +15.5 +1.28 2891 ~  <...> DA125RH RR73
+  000000 +15.0 +2.24 1197 ~  ON3HVP LB7YK 73
+  000000 +13.0 +1.36 2722 ~  BG3GP OH2XO RR73
+  000000 +12.5 +1.36 2009 ~  PY7ZC IK1QLD R-14
+  000000 +12.5 +1.36  788 ~  JA1LLG CT7BRV -15
+  000000 +10.5 +2.16 1834 ~  RV9CD SP2KW JO92
+NOTE: decode_ft8 prints a placeholder 000000 time field for file input; approximate
+UTC of a decode = recording start (see attempt line) + window offset + DT column.
+Record+decode step finished.

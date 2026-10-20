@@ -73,6 +73,12 @@ SITES = [
     {"site": "australia", "host": "22537.proxy.kiwisdr.com:8073",
      "label": "Esk, Queensland, Australia (Oceania)",
      "lat": -27.24, "lon": 152.42},
+    {"site": "canada", "host": "bachner.proxy.kiwisdr.com:8073",
+     "label": "London, Ontario, Canada (North America)",
+     "lat": 43.0, "lon": -81.2},
+    {"site": "usa", "host": "dxcentral.proxy.kiwisdr.com:8073",
+     "label": "Mandeville, Louisiana, USA (North America)",
+     "lat": 30.2, "lon": -90.1},
 ]
 BANDS = [("20m", 14074, 14.074), ("40m", 7074, 7.074)]
 

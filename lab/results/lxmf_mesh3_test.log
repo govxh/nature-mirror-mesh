@@ -1,0 +1,33 @@
+/home/hatch/workspace/nature-mirror-mesh/lab/lxmf_mesh3_test.py:2: SyntaxWarning: invalid escape sequence '\ '
+  """
+=== LXMF 3-node mesh test (S -> T -> C, transport forwarding) ===
+Token: NMM-MESH3-20261020-073213
+--- transport.stdout ---
+/home/hatch/workspace/nature-mirror-mesh/lab/lxmf_mesh3_test.py:2: SyntaxWarning: invalid escape sequence '\ '
+  """
+[T] transport node up, transport identity 3620b5de1432d0363340fe4ccff1fd55
+[T] learned path to C: hops_to(C)=1 (1 = C is one hop from T, via T's own server interface)
+[T] relay job done (C received the message); T forwarded traffic between S and C
+
+--- receiver.stdout ---
+/home/hatch/workspace/nature-mirror-mesh/lab/lxmf_mesh3_test.py:2: SyntaxWarning: invalid escape sequence '\ '
+  """
+[C] delivery destination: 0de1e4c77d8a6b06d2f483b0fea8a327
+[C] announced (will propagate C -> T -> S), waiting...
+[C] announced (will propagate C -> T -> S), waiting...
+[C] announced (will propagate C -> T -> S), waiting...
+[C] DECRYPTED MESSAGE RECEIVED: NMM-MESH3-20261020-073213
+[C] message received and written to file
+[2026-10-20 07:32:31] [Warning]  The socket for TCPInterface[Link to T only/127.0.0.1:51721] was closed, attempting to reconnect...
+
+--- sender.stdout ---
+/home/hatch/workspace/nature-mirror-mesh/lab/lxmf_mesh3_test.py:2: SyntaxWarning: invalid escape sequence '\ '
+  """
+[S] path to C found: hops_to(C)=2 (2 proves the path is S -> T -> C; S has NO direct interface to C)
+[S] message sent (state=1), token=NMM-MESH3-20261020-073213
+[S] delivery confirmed by router state=DELIVERED (end-to-end, via T)
+[S] sender done, final message state=8
+
+Sent token:     NMM-MESH3-20261020-073213
+Received token: NMM-MESH3-20261020-073213
+RESULT: PASS — LXMF message delivered S -> T -> C via transport node; S and C share no interface (see script header)

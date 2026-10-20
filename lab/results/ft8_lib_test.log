@@ -1,0 +1,70 @@
++ cd /home/hatch/workspace/nature-mirror-mesh/lab/ft8_lib
++ MSG='CQ NMM PK'
++ ./gen_ft8 'CQ NMM PK' /tmp/ft8_clean.wav 1000
+Packed data: 2c 91 43 6f e5 4a 9f 8a 20 00 
+FSK tones: 3140652121106022274361357706050010073140652300652444750144641227635176043140652
++ ./decode_ft8 /tmp/ft8_clean.wav
+Sample rate 12000 Hz, 180000 samples, 15.000 seconds
+Block size = 1920
+Subblock size = 960
+N_FFT = 3840
+#############################################################################################
+Max magnitude: -6.0 dB
+Decoded 1 messages, callsign hashtable size 0
+000000 +16.5 +1.36 1000 ~  CQ NMM PK
++ /home/hatch/workspace/nature-mirror-mesh/lab/venv/bin/python -
+sample_rate=12000 frames=180000 signal_rms=21247.6
+=== full-band RMS SNR -5 dB -> /tmp/ft8_snr-5.wav ===
+000000 +16.0 +1.36 1000 ~  CQ NMM PK
+
+Sample rate 12000 Hz, 180000 samples, 15.000 seconds
+Block size = 1920
+Subblock size = 960
+N_FFT = 3840
+#############################################################################################
+Max magnitude: -10.2 dB
+Decoded 1 messages, callsign hashtable size 0
+
+=== full-band RMS SNR -10 dB -> /tmp/ft8_snr-10.wav ===
+000000 +15.5 +1.36 1000 ~  CQ NMM PK
+
+Sample rate 12000 Hz, 180000 samples, 15.000 seconds
+Block size = 1920
+Subblock size = 960
+N_FFT = 3840
+#############################################################################################
+Max magnitude: -13.6 dB
+Decoded 1 messages, callsign hashtable size 0
+
+=== full-band RMS SNR -15 dB -> /tmp/ft8_snr-15.wav ===
+000000 +13.5 +1.36 1000 ~  CQ NMM PK
+
+Sample rate 12000 Hz, 180000 samples, 15.000 seconds
+Block size = 1920
+Subblock size = 960
+N_FFT = 3840
+#############################################################################################
+Max magnitude: -17.5 dB
+Decoded 1 messages, callsign hashtable size 0
+
+=== full-band RMS SNR -20 dB -> /tmp/ft8_snr-20.wav ===
+000000 +10.0 +1.36 1000 ~  CQ NMM PK
+
+Sample rate 12000 Hz, 180000 samples, 15.000 seconds
+Block size = 1920
+Subblock size = 960
+N_FFT = 3840
+#############################################################################################
+Max magnitude: -20.7 dB
+Decoded 1 messages, callsign hashtable size 0
+
+
+=== VERDICT ===
+PASS — ft8_lib built from source (kgoba/ft8_lib, make, gcc -O3, -lm).
+gen_ft8 encoded "CQ NMM PK" -> 15 s 12 kHz WAV; decode_ft8 decoded it back exactly:
+  clean WAV:            "000000 +16.5 +1.36 1000 ~  CQ NMM PK"  (Decoded 1 messages)
+  + Gaussian noise, full-band RMS SNR -5 dB:  decoded "CQ NMM PK"
+  + Gaussian noise, full-band RMS SNR -10 dB: decoded "CQ NMM PK"
+  + Gaussian noise, full-band RMS SNR -15 dB: decoded "CQ NMM PK"
+  + Gaussian noise, full-band RMS SNR -20 dB: decoded "CQ NMM PK"
+(gen_ft8 has no noise option; noise was added with numpy, seed 42, RMS-calibrated.)

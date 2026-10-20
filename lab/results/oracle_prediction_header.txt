@@ -1,10 +1,12 @@
 === PROPAGATION ORACLE PREDICTION (made BEFORE recording) ===
-Prediction made (UTC): 2026-10-20T08:04:21Z  for hour 2026-10-20T08:00Z
+Prediction made (UTC): 2026-10-20T08:43:44Z  for hour 2026-10-20T08:00Z
 Model: heuristic v1
 Model note: itur/P.533 probe: itur 0.4.0 present but itur.models.itu533 NOT available (ModuleNotFoundError: No module named 'itur.models.itu533'); itur 0.4.0 ships no P.533 HF model. Scores in this file were produced by transparent heuristic v1.
 Solar data: F10.7 used = 120.0 (NOAA 45-day forecast for prediction date); Ap = 22.0; smoothed SSN (R12) = 96.1
 Solar sources: https://services.swpc.noaa.gov/json/45-day-forecast.json; https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json
-Site ireland (Carlow, Ireland (Europe), emeraldsdr.ddns.net:8073): predicted best band = 40m | 20m: many (score 0.909) | 40m: many (score 0.915)
-Site australia (Esk, Queensland, Australia (Oceania), 22537.proxy.kiwisdr.com:8073): predicted best band = 40m | 20m: many (score 0.859) | 40m: many (score 0.942)
+Site ireland (Carlow, Ireland (Europe), emeraldsdr.ddns.net:8073): predicted best band = 20m | 20m: many (score 1.000) | 40m: many (score 0.869)
+Site australia (Esk, Queensland, Australia (Oceania), 22537.proxy.kiwisdr.com:8073): predicted best band = 40m | 20m: many (score 0.654) | 40m: many (score 0.982)
+Site canada (London, Ontario, Canada (North America), bachner.proxy.kiwisdr.com:8073): predicted best band = 40m | 20m: few (score 0.294) | 40m: many (score 0.997)
+Site usa (Mandeville, Louisiana, USA (North America), dxcentral.proxy.kiwisdr.com:8073): predicted best band = 40m | 20m: few (score 0.294) | 40m: many (score 0.997)
 Measured categories: none = 0 unique decodes; few = 1-9; many = >=10 (90 s recording, ft8_lib decode).
 Integrity: prediction derived from NOAA data + geometry only; no recording was consulted.

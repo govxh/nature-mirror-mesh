@@ -1,6 +1,6 @@
 {
   "experiment": "Nature-Mirror Mesh -- Propagation Oracle Test",
-  "prediction_made_utc": "2026-10-20T08:04:21Z",
+  "prediction_made_utc": "2026-10-20T08:43:44Z",
   "predicted_for_utc_hour": "2026-10-20T08:00Z",
   "model": "heuristic v1",
   "model_note": "itur/P.533 probe: itur 0.4.0 present but itur.models.itu533 NOT available (ModuleNotFoundError: No module named 'itur.models.itu533'); itur 0.4.0 ships no P.533 HF model. Scores in this file were produced by transparent heuristic v1.",
@@ -16,7 +16,7 @@
       "https://services.swpc.noaa.gov/json/45-day-forecast.json",
       "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json"
     ],
-    "fetched_utc": "2026-10-20T08:04:21Z",
+    "fetched_utc": "2026-10-20T08:43:44Z",
     "f107_used": 120.0,
     "f107_kind": "NOAA 45-day forecast for prediction date",
     "ap_used": 22.0,
@@ -42,67 +42,67 @@
       "bands": {
         "20m": {
           "freq_khz": 14074,
-          "score": 0.909,
+          "score": 1.0,
           "expected_decodes": "many"
         },
         "40m": {
           "freq_khz": 7074,
-          "score": 0.915,
+          "score": 0.869,
           "expected_decodes": "many"
         }
       },
-      "predicted_best_band": "40m",
+      "predicted_best_band": "20m",
       "geomagnetic_disturbance_discount_applied": false,
       "samples": [
         {
           "sample": "site",
           "lat": 52.84,
           "lon": -6.93,
-          "solar_elev_deg": 4.9,
-          "foF2_MHz": 9.96,
-          "MUF_proxy_MHz": 30.88,
+          "solar_elev_deg": 10.1,
+          "foF2_MHz": 10.44,
+          "MUF_proxy_MHz": 32.36,
           "20m_support": 1.0,
-          "40m_support": 0.935
+          "40m_support": 0.869
         },
         {
           "sample": "mid-000",
           "lat": 66.33,
           "lon": -6.93,
-          "solar_elev_deg": -1.1,
-          "foF2_MHz": 7.29,
-          "MUF_proxy_MHz": 22.59,
-          "20m_support": 0.999,
-          "40m_support": 1.0
+          "solar_elev_deg": 2.3,
+          "foF2_MHz": 8.97,
+          "MUF_proxy_MHz": 27.81,
+          "20m_support": 1.0,
+          "40m_support": 0.97
         },
         {
           "sample": "mid-090",
           "lat": 50.8,
           "lon": 14.73,
-          "solar_elev_deg": 17.0,
+          "solar_elev_deg": 21.1,
           "foF2_MHz": 10.44,
           "MUF_proxy_MHz": 32.36,
           "20m_support": 1.0,
-          "40m_support": 0.781
+          "40m_support": 0.73
         },
         {
           "sample": "mid-180",
           "lat": 39.35,
           "lon": -6.93,
-          "solar_elev_deg": 10.7,
+          "solar_elev_deg": 17.4,
           "foF2_MHz": 10.44,
           "MUF_proxy_MHz": 32.36,
           "20m_support": 1.0,
-          "40m_support": 0.861
+          "40m_support": 0.775
         },
         {
           "sample": "mid-270",
           "lat": 50.8,
           "lon": -28.59,
-          "solar_elev_deg": -7.2,
-          "foF2_MHz": 4.61,
-          "MUF_proxy_MHz": 14.3,
-          "20m_support": 0.546,
-          "40m_support": 0.999
+          "solar_elev_deg": -1.1,
+          "foF2_MHz": 7.26,
+          "MUF_proxy_MHz": 22.5,
+          "20m_support": 0.999,
+          "40m_support": 1.0
         }
       ]
     },
@@ -115,12 +115,12 @@
       "bands": {
         "20m": {
           "freq_khz": 14074,
-          "score": 0.859,
+          "score": 0.654,
           "expected_decodes": "many"
         },
         "40m": {
           "freq_khz": 7074,
-          "score": 0.942,
+          "score": 0.982,
           "expected_decodes": "many"
         }
       },
@@ -131,27 +131,27 @@
           "sample": "site",
           "lat": -27.24,
           "lon": 152.42,
-          "solar_elev_deg": 2.1,
-          "foF2_MHz": 8.86,
-          "MUF_proxy_MHz": 27.47,
-          "20m_support": 1.0,
-          "40m_support": 0.973
+          "solar_elev_deg": -6.4,
+          "foF2_MHz": 4.85,
+          "MUF_proxy_MHz": 15.02,
+          "20m_support": 0.688,
+          "40m_support": 1.0
         },
         {
           "sample": "mid-000",
           "lat": -13.75,
           "lon": 152.42,
-          "solar_elev_deg": -0.7,
-          "foF2_MHz": 7.49,
-          "MUF_proxy_MHz": 23.23,
-          "20m_support": 1.0,
-          "40m_support": 1.0
+          "solar_elev_deg": -10.0,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
         },
         {
           "sample": "mid-090",
           "lat": -26.43,
           "lon": 167.52,
-          "solar_elev_deg": -11.1,
+          "solar_elev_deg": -19.3,
           "foF2_MHz": 4.2,
           "MUF_proxy_MHz": 13.02,
           "20m_support": 0.294,
@@ -161,21 +161,167 @@
           "sample": "mid-180",
           "lat": -40.73,
           "lon": 152.42,
-          "solar_elev_deg": 4.7,
-          "foF2_MHz": 9.9,
-          "MUF_proxy_MHz": 30.68,
-          "20m_support": 1.0,
-          "40m_support": 0.938
+          "solar_elev_deg": -2.5,
+          "foF2_MHz": 6.55,
+          "MUF_proxy_MHz": 20.29,
+          "20m_support": 0.994,
+          "40m_support": 1.0
         },
         {
           "sample": "mid-270",
           "lat": -26.43,
           "lon": 137.32,
-          "solar_elev_deg": 15.3,
-          "foF2_MHz": 10.44,
-          "MUF_proxy_MHz": 32.36,
+          "solar_elev_deg": 6.5,
+          "foF2_MHz": 10.32,
+          "MUF_proxy_MHz": 32.01,
           "20m_support": 1.0,
-          "40m_support": 0.802
+          "40m_support": 0.914
+        }
+      ]
+    },
+    {
+      "site": "canada",
+      "host": "bachner.proxy.kiwisdr.com:8073",
+      "label": "London, Ontario, Canada (North America)",
+      "lat": 43.0,
+      "lon": -81.2,
+      "bands": {
+        "20m": {
+          "freq_khz": 14074,
+          "score": 0.294,
+          "expected_decodes": "few"
+        },
+        "40m": {
+          "freq_khz": 7074,
+          "score": 0.997,
+          "expected_decodes": "many"
+        }
+      },
+      "predicted_best_band": "40m",
+      "geomagnetic_disturbance_discount_applied": false,
+      "samples": [
+        {
+          "sample": "site",
+          "lat": 43.0,
+          "lon": -81.2,
+          "solar_elev_deg": -36.7,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-000",
+          "lat": 56.49,
+          "lon": -81.2,
+          "solar_elev_deg": -30.9,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-090",
+          "lat": 41.54,
+          "lon": -63.04,
+          "solar_elev_deg": -24.0,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-180",
+          "lat": 29.51,
+          "lon": -81.2,
+          "solar_elev_deg": -40.4,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-270",
+          "lat": 41.54,
+          "lon": -99.36,
+          "solar_elev_deg": -49.1,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        }
+      ]
+    },
+    {
+      "site": "usa",
+      "host": "dxcentral.proxy.kiwisdr.com:8073",
+      "label": "Mandeville, Louisiana, USA (North America)",
+      "lat": 30.2,
+      "lon": -90.1,
+      "bands": {
+        "20m": {
+          "freq_khz": 14074,
+          "score": 0.294,
+          "expected_decodes": "few"
+        },
+        "40m": {
+          "freq_khz": 7074,
+          "score": 0.997,
+          "expected_decodes": "many"
+        }
+      },
+      "predicted_best_band": "40m",
+      "geomagnetic_disturbance_discount_applied": false,
+      "samples": [
+        {
+          "sample": "site",
+          "lat": 30.2,
+          "lon": -90.1,
+          "solar_elev_deg": -47.7,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-000",
+          "lat": 43.69,
+          "lon": -90.1,
+          "solar_elev_deg": -42.2,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-090",
+          "lat": 29.28,
+          "lon": -74.59,
+          "solar_elev_deg": -34.7,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-180",
+          "lat": 16.71,
+          "lon": -90.1,
+          "solar_elev_deg": -50.1,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
+        },
+        {
+          "sample": "mid-270",
+          "lat": 29.28,
+          "lon": -105.61,
+          "solar_elev_deg": -60.3,
+          "foF2_MHz": 4.2,
+          "MUF_proxy_MHz": 13.02,
+          "20m_support": 0.294,
+          "40m_support": 0.997
         }
       ]
     }

@@ -1,0 +1,603 @@
+=== PROPAGATION ORACLE TEST -- RESULTS (GitHub Actions, zero-dollar, receive-only) ===
+Method: oracle_predict.py FIRST (NOAA solar data + model), then 8 simultaneous kiwirecorder recordings (4 receivers x 2 bands, 90 s), then ft8_lib decode + this scorecard. Prediction precedes measurement; the score is computed from the committed prediction file.
+
+=== PROPAGATION ORACLE PREDICTION (made BEFORE recording) ===
+Prediction made (UTC): 2026-10-20T08:43:44Z  for hour 2026-10-20T08:00Z
+Model: heuristic v1
+Model note: itur/P.533 probe: itur 0.4.0 present but itur.models.itu533 NOT available (ModuleNotFoundError: No module named 'itur.models.itu533'); itur 0.4.0 ships no P.533 HF model. Scores in this file were produced by transparent heuristic v1.
+Solar data: F10.7 used = 120.0 (NOAA 45-day forecast for prediction date); Ap = 22.0; smoothed SSN (R12) = 96.1
+Solar sources: https://services.swpc.noaa.gov/json/45-day-forecast.json; https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json
+Site ireland (Carlow, Ireland (Europe), emeraldsdr.ddns.net:8073): predicted best band = 20m | 20m: many (score 1.000) | 40m: many (score 0.869)
+Site australia (Esk, Queensland, Australia (Oceania), 22537.proxy.kiwisdr.com:8073): predicted best band = 40m | 20m: many (score 0.654) | 40m: many (score 0.982)
+Site canada (London, Ontario, Canada (North America), bachner.proxy.kiwisdr.com:8073): predicted best band = 40m | 20m: few (score 0.294) | 40m: many (score 0.997)
+Site usa (Mandeville, Louisiana, USA (North America), dxcentral.proxy.kiwisdr.com:8073): predicted best band = 40m | 20m: few (score 0.294) | 40m: many (score 0.997)
+Measured categories: none = 0 unique decodes; few = 1-9; many = >=10 (90 s recording, ft8_lib decode).
+Integrity: prediction derived from NOAA data + geometry only; no recording was consulted.
+
+--- Record step notes (verbatim) ---
+=== Record step notes ===
+Plan: 8 simultaneous kiwirecorder runs (Ireland + Australia + Canada + USA, 14074 + 7074 kHz USB, passband 200-3000 Hz, tlimit 90s, resample 12000).
+Notes prepared (UTC): 2026-10-20T08:43:45Z
+Waiting 15s to align launch to a UTC minute boundary...
+Parallel launch (UTC): 2026-10-20T08:44:00Z
+Parallel recorder rec_ireland_14074: exit code 0
+Parallel recorder rec_ireland_7074: exit code 0
+Parallel recorder rec_australia_14074: exit code 124
+Parallel recorder rec_australia_7074: exit code 124
+Parallel recorder rec_canada_14074: exit code 0
+Parallel recorder rec_canada_7074: exit code 0
+Parallel recorder rec_usa_14074: exit code 124
+Parallel recorder rec_usa_7074: exit code 124
+Parallel phase finished (UTC): 2026-10-20T08:47:00Z
+total 6440
+drwxr-xr-x  2 runner runner    4096 Oct 20 08:44 .
+drwxrwxrwt 15 root   root      4096 Oct 20 08:43 ..
+-rw-r--r--  1 runner runner     108 Oct 20 08:44 kiwi_noname.txt
+-rw-r--r--  1 runner runner       0 Oct 20 08:44 rec_australia_14074.recorder.log
+-rw-r--r--  1 runner runner       0 Oct 20 08:44 rec_australia_7074.recorder.log
+-rw-r--r--  1 runner runner   17254 Oct 20 08:45 rec_canada_14074.recorder.log
+-rw-r--r--  1 runner runner 2166828 Oct 20 08:45 rec_canada_14074.wav
+-rw-r--r--  1 runner runner   17254 Oct 20 08:45 rec_canada_7074.recorder.log
+-rw-r--r--  1 runner runner 2166828 Oct 20 08:45 rec_canada_7074.wav
+-rw-r--r--  1 runner runner   17254 Oct 20 08:45 rec_ireland_14074.recorder.log
+-rw-r--r--  1 runner runner 2166828 Oct 20 08:45 rec_ireland_14074.wav
+-rw-r--r--  1 runner runner    1232 Oct 20 08:44 rec_ireland_7074.recorder.log
+-rw-r--r--  1 runner runner       0 Oct 20 08:44 rec_usa_14074.recorder.log
+-rw-r--r--  1 runner runner       0 Oct 20 08:44 rec_usa_7074.recorder.log
+-rw-r--r--  1 runner runner     760 Oct 20 08:47 record_notes.txt
+SEQUENTIAL FALLBACK for rec_ireland_7074: parallel attempt yielded 0 bytes (< 360000); retrying sequentially at 2026-10-20T08:47:00Z. This recording is NOT simultaneous with the others.
+Sequential fallback rec_ireland_7074: exit code 0
+Sequential fallback rec_ireland_7074: WAV now 2166828 bytes
+SEQUENTIAL FALLBACK for rec_australia_14074: parallel attempt yielded 0 bytes (< 360000); retrying sequentially at 2026-10-20T08:48:32Z. This recording is NOT simultaneous with the others.
+Sequential fallback rec_australia_14074: exit code 124
+Sequential fallback rec_australia_14074: WAV now 0 bytes
+SEQUENTIAL FALLBACK for rec_australia_7074: parallel attempt yielded 0 bytes (< 360000); retrying sequentially at 2026-10-20T08:51:32Z. This recording is NOT simultaneous with the others.
+Sequential fallback rec_australia_7074: exit code 124
+Sequential fallback rec_australia_7074: WAV now 0 bytes
+SEQUENTIAL FALLBACK for rec_usa_14074: parallel attempt yielded 0 bytes (< 360000); retrying sequentially at 2026-10-20T08:54:32Z. This recording is NOT simultaneous with the others.
+Sequential fallback rec_usa_14074: exit code 124
+Sequential fallback rec_usa_14074: WAV now 0 bytes
+SEQUENTIAL FALLBACK for rec_usa_7074: parallel attempt yielded 0 bytes (< 360000); retrying sequentially at 2026-10-20T08:57:32Z. This recording is NOT simultaneous with the others.
+Sequential fallback rec_usa_7074: exit code 124
+Sequential fallback rec_usa_7074: WAV now 0 bytes
+Record step finished (UTC): 2026-10-20T09:00:32Z
+total 8592
+drwxr-xr-x  2 runner runner    4096 Oct 20 08:47 .
+drwxrwxrwt 15 root   root      4096 Oct 20 08:43 ..
+-rw-r--r--  1 runner runner     101 Oct 20 08:47 kiwi_noname.txt
+-rw-r--r--  1 runner runner      56 Oct 20 08:48 rec_australia_14074.recorder.log
+-rw-r--r--  1 runner runner      56 Oct 20 08:51 rec_australia_7074.recorder.log
+-rw-r--r--  1 runner runner   17254 Oct 20 08:45 rec_canada_14074.recorder.log
+-rw-r--r--  1 runner runner 2166828 Oct 20 08:45 rec_canada_14074.wav
+-rw-r--r--  1 runner runner   17254 Oct 20 08:45 rec_canada_7074.recorder.log
+-rw-r--r--  1 runner runner 2166828 Oct 20 08:45 rec_canada_7074.wav
+-rw-r--r--  1 runner runner   17254 Oct 20 08:45 rec_ireland_14074.recorder.log
+-rw-r--r--  1 runner runner 2166828 Oct 20 08:45 rec_ireland_14074.wav
+-rw-r--r--  1 runner runner   18542 Oct 20 08:48 rec_ireland_7074.recorder.log
+-rw-r--r--  1 runner runner 2166828 Oct 20 08:48 rec_ireland_7074.wav
+-rw-r--r--  1 runner runner      56 Oct 20 08:54 rec_usa_14074.recorder.log
+-rw-r--r--  1 runner runner      56 Oct 20 08:57 rec_usa_7074.recorder.log
+-rw-r--r--  1 runner runner    3352 Oct 20 09:00 record_notes.txt
+
+=== MEASUREMENTS ===
+
+--- Recording: site=ireland host=emeraldsdr.ddns.net:8073 (Carlow, Ireland (Europe)) band=20m freq=14074 kHz USB ---
+Recorder log (tail):
+    Block: 00000203, RSSI: -101.5  
+    Block: 00000204, RSSI: -101.6  
+    Block: 00000205, RSSI: -102.0  
+    Block: 00000206, RSSI:  -80.8  
+    Block: 00000207, RSSI:  -80.9  
+    Block: 00000208, RSSI:  -80.8  
+    Block: 00000209, RSSI:  -80.3  
+    Block: 0000020a, RSSI:  -80.6  
+    Block: 0000020b, RSSI:  -80.3  
+    Block: 0000020c, RSSI:  -80.1  
+    Block: 0000020d, RSSI:  -80.8  
+    Block: 0000020e, RSSI:  -80.8  
+    Block: 0000020f, RSSI:  -79.9  
+    Block: 00000210, RSSI:  -80.4  
+    Block: 00000211, RSSI:  -80.5  
+WAV bytes: 2166828
+Recording start for slot alignment: 2026-10-20T08:44:00Z (source: record_notes.txt parallel launch)
+WAV: 12000 Hz, 1 channel(s), 16-bit, 1083392 samples, 90.28 s
+Recording start (UTC): 2026-10-20T08:44:00.000Z
+Offset to first UTC slot boundary: 0.00 s
+Slot 2026-10-20T08:44:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:30Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:45Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:30Z (PARTIAL, 0.3 s of audio, zero-padded)
+    2026-10-20T08:44:00Z  -1.52  1197  CQ LB7YK JP53
+    2026-10-20T08:44:00Z  -0.48  581  CT1EDG DL0ARN JO50
+    2026-10-20T08:44:00Z  -1.52  700  VK1AX SM6UQL JO57
+    2026-10-20T08:44:00Z  -1.52  1003  CU3HN IU6KQP JN63
+    2026-10-20T08:44:00Z  -1.36  1497  CQ S55X JN76
+    2026-10-20T08:44:00Z  -1.52  1616  VK1AX OZ5PST JO57
+    2026-10-20T08:44:00Z  -1.28  881  R3KIT V31DL EK57
+    2026-10-20T08:44:00Z  -1.52  1456  CQ HA1ZW JN86
+    2026-10-20T08:44:00Z  -1.36  2469  R6DXH OE3EHS JN87
+    2026-10-20T08:44:00Z  -1.52  2781  LZ4DPB DL1BBO JO43
+    2026-10-20T08:44:00Z  -1.28  291  CQ IW2NEF JN46
+    2026-10-20T08:44:00Z  -1.44  769  IV3KZF LA3WP RR73
+    2026-10-20T08:44:00Z  -1.52  1312  IZ3XCA SA4JIK RRR
+    2026-10-20T08:44:00Z  -1.52  853  CU3HN EA4IXY 73
+    2026-10-20T08:44:00Z  -1.44  2603  EA7OC IU8RFW JN70
+    2026-10-20T08:44:15Z  -1.52  1069  EA5ISA IN3ADG RR73
+    2026-10-20T08:44:15Z  -1.52  2103  CQ IK4RVY JN64
+    2026-10-20T08:44:15Z  -1.44  2853  IW5ALZ EA7OC IM77
+    2026-10-20T08:44:15Z  -1.28  2294  CQ DX EA5EE IM99
+    2026-10-20T08:44:15Z  -1.52  1312  SA4JIK IZ3XCA 73
+    2026-10-20T08:44:15Z  -1.52  1497  V31DL IU3TBD JN55
+    2026-10-20T08:44:15Z  -1.12  581  DL0ARN CT1EDG -02
+    2026-10-20T08:44:15Z  -1.36  844  CQ OK5AW JO70
+    2026-10-20T08:44:15Z  -1.28  1769  M7JBG UA3AIU 73
+    2026-10-20T08:44:15Z  -1.44  681  M7TUP JA7QOA -15
+    2026-10-20T08:44:15Z  -1.44  384  R0JAC IK4LZH JN54
+    2026-10-20T08:44:15Z  -1.60  2631  JA1OSJ CT4NH -07
+    2026-10-20T08:44:15Z  -1.52  1403  CQ OE1AES JN88
+    2026-10-20T08:44:15Z  -1.28  1719  PA7J EA4IPN -03
+    2026-10-20T08:44:15Z  -0.56  1634  PD3WMA UA2FFD KO04
+    2026-10-20T08:44:15Z  -1.52  503  LA3WP IV3KZF 73
+    2026-10-20T08:44:30Z  -1.28  291  CQ IW2NEF JN46
+    2026-10-20T08:44:30Z  -1.44  2503  ON7IM EB3DIM -12
+    2026-10-20T08:44:30Z  -0.48  581  CT1EDG DL0ARN JO50
+    2026-10-20T08:44:30Z  -1.44  769  CU3HN LA3WP -06
+    2026-10-20T08:44:30Z  -1.52  1197  R3BJZ LB7YK +02
+    2026-10-20T08:44:30Z  -1.52  1003  CU3HN IU6KQP JN63
+    2026-10-20T08:44:30Z  -1.36  881  R3KIT V31DL R-11
+    2026-10-20T08:44:30Z  -1.52  1456  CQ HA1ZW JN86
+    2026-10-20T08:44:30Z  -1.52  1616  VK1AX OZ5PST JO57
+    2026-10-20T08:44:30Z  -1.52  700  VK1AX SM6UQL JO57
+    2026-10-20T08:44:30Z  -1.52  2781  LZ4DPB DL1BBO JO43
+    2026-10-20T08:44:30Z  -1.52  1147  LY3PW IS0URG JM49
+    2026-10-20T08:44:30Z  -1.44  2603  EA7OC IU8RFW JN70
+    2026-10-20T08:44:30Z  -1.52  1956  CQ EA8DHQ IL18
+    2026-10-20T08:44:30Z  -1.04  2312  DL7ACA R8UR -19
+    2026-10-20T08:44:45Z  -1.36  384  R0JAC IK4LZH JN54
+    2026-10-20T08:44:45Z  -1.52  1809  IU1WVQ CU3HN RR73
+    2026-10-20T08:44:45Z  -1.52  2166  EA8DHQ YL2CI KO06
+    2026-10-20T08:44:45Z  -1.36  844  CQ OK5AW JO70
+    2026-10-20T08:44:45Z  -1.28  2294  G0HSP EA5EE +06
+    2026-10-20T08:44:45Z  -1.52  2103  CQ IK4RVY JN64
+    2026-10-20T08:44:45Z  -1.28  1719  PA7J EA4IPN -03
+    2026-10-20T08:44:45Z  -1.52  1403  CQ OE1AES JN88
+    2026-10-20T08:44:45Z  -1.20  2800  H49A F5URG JN03
+    2026-10-20T08:44:45Z  -1.52  1525  V31DL R3KIT RR73
+    2026-10-20T08:44:45Z  -1.04  1497  V31DL IU3TBD JN55
+    2026-10-20T08:44:45Z  -1.52  2631  JA1OSJ CT4NH RR73
+    2026-10-20T08:44:45Z  -1.12  581  DL0ARN CT1EDG -02
+    2026-10-20T08:44:45Z  -0.56  1638  CQ UA2FFD KO04
+    2026-10-20T08:44:45Z  -1.44  681  M7TUP JA7QOA RR73
+    2026-10-20T08:45:00Z  -0.48  581  CT1EDG DL0ARN JO50
+    2026-10-20T08:45:00Z  -1.44  2503  CQ EB3DIM JN11
+    2026-10-20T08:45:00Z  -1.52  1069  CQ IN3ADG JN56
+    2026-10-20T08:45:00Z  -1.60  344  F5UNH S51XA -05
+    2026-10-20T08:45:00Z  -0.72  1197  R3BJZ LB7YK +02
+    2026-10-20T08:45:00Z  -1.52  1003  CU3HN IU6KQP JN63
+    2026-10-20T08:45:00Z  -1.52  788  G0JEI CT7BRV 73
+    2026-10-20T08:45:00Z  -1.28  291  MW7FKA IW2NEF +01
+    2026-10-20T08:45:00Z  -1.52  700  VK1AX SM6UQL R-20
+    2026-10-20T08:45:00Z  -1.52  1456  CQ HA1ZW JN86
+    2026-10-20T08:45:00Z  -1.36  1497  CQ S55X JN76
+    2026-10-20T08:45:00Z  -1.36  881  R3KIT V31DL 73
+    2026-10-20T08:45:00Z  -1.60  1147  LY3PW IS0URG JM49
+    2026-10-20T08:45:00Z  -1.44  956  DC3DP SA5TAL RR73
+    2026-10-20T08:45:00Z  -1.52  1312  G4MHJ SA4JIK +01
+    2026-10-20T08:45:00Z  -0.88  2319  DL7ACA R8UR -19
+    2026-10-20T08:45:00Z  -1.44  1959  YL2CI EA8DHQ +17
+    2026-10-20T08:45:15Z  -1.52  506  H49A IV3KZF JN66
+    2026-10-20T08:45:15Z  -1.28  1959  SA5TAL UA3AIU KO85
+    2026-10-20T08:45:15Z  -1.52  1403  CQ OE1AES JN88
+    2026-10-20T08:45:15Z  -1.28  2294  G0HSP EA5EE RR73
+    2026-10-20T08:45:15Z  -1.52  2166  EA8DHQ YL2CI R-04
+    2026-10-20T08:45:15Z  -1.12  581  DL0ARN CT1EDG -02
+    2026-10-20T08:45:15Z  -1.44  681  PD3RH JA7QOA -15
+    2026-10-20T08:45:15Z  -1.52  1806  IU6KQP CU3HN -02
+    2026-10-20T08:45:15Z  -1.12  2800  H49A F5URG JN03
+    2026-10-20T08:45:15Z  -1.52  1497  V31DL IU3TBD JN55
+    2026-10-20T08:45:15Z  -1.36  844  CQ OK5AW JO70
+    2026-10-20T08:45:15Z  -1.52  384  CQ IK4LZH JN54
+    2026-10-20T08:45:15Z  -1.28  1719  PA7J EA4IPN -03
+    2026-10-20T08:45:15Z  -1.52  2631  BG3GP CT4NH -08
+    2026-10-20T08:45:15Z  -1.52  2103  CQ IK4RVY JN64
+    2026-10-20T08:45:15Z  -1.52  2678  R8KBM SP5MXZ -14
+    2026-10-20T08:45:15Z  -0.56  1638  CQ UA2FFD KO04
+    2026-10-20T08:45:15Z  -1.44  1856  EA8DHQ SV2AEL KN10
+Unique (slot, text) transmissions decoded (UTC-slot-aligned, each slot once): 96
+Unique FT8 message texts decoded: 66
+  2026-10-20T08:44:00Z  -1.52  1197  CQ LB7YK JP53
+  2026-10-20T08:44:00Z  -0.48  581  CT1EDG DL0ARN JO50
+  2026-10-20T08:44:00Z  -1.52  700  VK1AX SM6UQL JO57
+  2026-10-20T08:44:00Z  -1.52  1003  CU3HN IU6KQP JN63
+  2026-10-20T08:44:00Z  -1.36  1497  CQ S55X JN76
+  2026-10-20T08:44:00Z  -1.52  1616  VK1AX OZ5PST JO57
+  2026-10-20T08:44:00Z  -1.28  881  R3KIT V31DL EK57
+  2026-10-20T08:44:00Z  -1.52  1456  CQ HA1ZW JN86
+  2026-10-20T08:44:00Z  -1.36  2469  R6DXH OE3EHS JN87
+  2026-10-20T08:44:00Z  -1.52  2781  LZ4DPB DL1BBO JO43
+  2026-10-20T08:44:00Z  -1.28  291  CQ IW2NEF JN46
+  2026-10-20T08:44:00Z  -1.44  769  IV3KZF LA3WP RR73
+  2026-10-20T08:44:00Z  -1.52  1312  IZ3XCA SA4JIK RRR
+  2026-10-20T08:44:00Z  -1.52  853  CU3HN EA4IXY 73
+  2026-10-20T08:44:00Z  -1.44  2603  EA7OC IU8RFW JN70
+  2026-10-20T08:44:15Z  -1.52  1069  EA5ISA IN3ADG RR73
+  2026-10-20T08:44:15Z  -1.52  2103  CQ IK4RVY JN64
+  2026-10-20T08:44:15Z  -1.44  2853  IW5ALZ EA7OC IM77
+  2026-10-20T08:44:15Z  -1.28  2294  CQ DX EA5EE IM99
+  2026-10-20T08:44:15Z  -1.52  1312  SA4JIK IZ3XCA 73
+  2026-10-20T08:44:15Z  -1.52  1497  V31DL IU3TBD JN55
+  2026-10-20T08:44:15Z  -1.12  581  DL0ARN CT1EDG -02
+  2026-10-20T08:44:15Z  -1.36  844  CQ OK5AW JO70
+  2026-10-20T08:44:15Z  -1.28  1769  M7JBG UA3AIU 73
+  2026-10-20T08:44:15Z  -1.44  681  M7TUP JA7QOA -15
+  2026-10-20T08:44:15Z  -1.44  384  R0JAC IK4LZH JN54
+  2026-10-20T08:44:15Z  -1.60  2631  JA1OSJ CT4NH -07
+  2026-10-20T08:44:15Z  -1.52  1403  CQ OE1AES JN88
+  2026-10-20T08:44:15Z  -1.28  1719  PA7J EA4IPN -03
+  2026-10-20T08:44:15Z  -0.56  1634  PD3WMA UA2FFD KO04
+  2026-10-20T08:44:15Z  -1.52  503  LA3WP IV3KZF 73
+  2026-10-20T08:44:30Z  -1.44  2503  ON7IM EB3DIM -12
+  2026-10-20T08:44:30Z  -1.44  769  CU3HN LA3WP -06
+  2026-10-20T08:44:30Z  -1.52  1197  R3BJZ LB7YK +02
+  2026-10-20T08:44:30Z  -1.36  881  R3KIT V31DL R-11
+  2026-10-20T08:44:30Z  -1.52  1147  LY3PW IS0URG JM49
+  2026-10-20T08:44:30Z  -1.52  1956  CQ EA8DHQ IL18
+  2026-10-20T08:44:30Z  -1.04  2312  DL7ACA R8UR -19
+  2026-10-20T08:44:45Z  -1.52  1809  IU1WVQ CU3HN RR73
+  2026-10-20T08:44:45Z  -1.52  2166  EA8DHQ YL2CI KO06
+  2026-10-20T08:44:45Z  -1.28  2294  G0HSP EA5EE +06
+  2026-10-20T08:44:45Z  -1.20  2800  H49A F5URG JN03
+  2026-10-20T08:44:45Z  -1.52  1525  V31DL R3KIT RR73
+  2026-10-20T08:44:45Z  -1.52  2631  JA1OSJ CT4NH RR73
+  2026-10-20T08:44:45Z  -0.56  1638  CQ UA2FFD KO04
+  2026-10-20T08:44:45Z  -1.44  681  M7TUP JA7QOA RR73
+  2026-10-20T08:45:00Z  -1.44  2503  CQ EB3DIM JN11
+  2026-10-20T08:45:00Z  -1.52  1069  CQ IN3ADG JN56
+  2026-10-20T08:45:00Z  -1.60  344  F5UNH S51XA -05
+  2026-10-20T08:45:00Z  -1.52  788  G0JEI CT7BRV 73
+  2026-10-20T08:45:00Z  -1.28  291  MW7FKA IW2NEF +01
+  2026-10-20T08:45:00Z  -1.52  700  VK1AX SM6UQL R-20
+  2026-10-20T08:45:00Z  -1.36  881  R3KIT V31DL 73
+  2026-10-20T08:45:00Z  -1.44  956  DC3DP SA5TAL RR73
+  2026-10-20T08:45:00Z  -1.52  1312  G4MHJ SA4JIK +01
+  2026-10-20T08:45:00Z  -1.44  1959  YL2CI EA8DHQ +17
+  2026-10-20T08:45:15Z  -1.52  506  H49A IV3KZF JN66
+  2026-10-20T08:45:15Z  -1.28  1959  SA5TAL UA3AIU KO85
+  2026-10-20T08:45:15Z  -1.28  2294  G0HSP EA5EE RR73
+  2026-10-20T08:45:15Z  -1.52  2166  EA8DHQ YL2CI R-04
+  2026-10-20T08:45:15Z  -1.44  681  PD3RH JA7QOA -15
+  2026-10-20T08:45:15Z  -1.52  1806  IU6KQP CU3HN -02
+  2026-10-20T08:45:15Z  -1.52  384  CQ IK4LZH JN54
+  2026-10-20T08:45:15Z  -1.52  2631  BG3GP CT4NH -08
+  2026-10-20T08:45:15Z  -1.52  2678  R8KBM SP5MXZ -14
+  2026-10-20T08:45:15Z  -1.44  1856  EA8DHQ SV2AEL KN10
+
+--- Recording: site=ireland host=emeraldsdr.ddns.net:8073 (Carlow, Ireland (Europe)) band=40m freq=7074 kHz USB ---
+Recorder log (tail):
+    Block: 00000203, RSSI: -115.8  
+    Block: 00000204, RSSI: -116.0  
+    Block: 00000205, RSSI: -114.8  
+    Block: 00000206, RSSI: -115.3  
+    Block: 00000207, RSSI: -115.4  
+    Block: 00000208, RSSI: -106.6  
+    Block: 00000209, RSSI: -101.7  
+    Block: 0000020a, RSSI:  -99.0  
+    Block: 0000020b, RSSI:  -95.1  
+    Block: 0000020c, RSSI:  -98.0  
+    Block: 0000020d, RSSI:  -97.8  
+    Block: 0000020e, RSSI:  -97.5  
+    Block: 0000020f, RSSI:  -98.2  
+    Block: 00000210, RSSI:  -95.9  
+    Block: 00000211, RSSI:  -97.4  
+WAV bytes: 2166828
+Recording start for slot alignment: 2026-10-20T08:47:00Z (source: record_notes.txt sequential-fallback)
+WAV: 12000 Hz, 1 channel(s), 16-bit, 1083392 samples, 90.28 s
+Recording start (UTC): 2026-10-20T08:47:00.000Z
+Offset to first UTC slot boundary: 0.00 s
+Slot 2026-10-20T08:47:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:47:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:47:30Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:47:45Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:48:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:48:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:48:30Z (PARTIAL, 0.3 s of audio, zero-padded)
+    2026-10-20T08:47:00Z  -0.48  1019  W2TAD M9PMB R-18
+    2026-10-20T08:47:00Z  -1.04  2219  DL6YJB PD1ACS JO32
+    2026-10-20T08:47:00Z  -1.20  1416  M7MPY M9XPN R-01
+    2026-10-20T08:47:00Z  -0.88  647  KD2WBX MI0NWA -11
+    2026-10-20T08:47:00Z  -1.12  716  W2TAD G6PWS R-20
+    2026-10-20T08:47:00Z  -1.60  2297  VE2LBI G3AKA R-19
+    2026-10-20T08:47:00Z  -0.80  1350  CQ G8NNL IO83
+    2026-10-20T08:47:00Z  -1.04  528  F4FYO M0GWC R+02
+    2026-10-20T08:47:00Z  -1.04  1591  YV5YDT TF5B RR73
+    2026-10-20T08:47:00Z  -0.96  1500  V31MA MM6HVT IO86
+    2026-10-20T08:47:00Z  -1.04  1856  DL6YJB F3CJ JO10
+    2026-10-20T08:47:00Z  -1.04  397  DK3PI PD2MAC JO22
+    2026-10-20T08:47:00Z  -1.12  1197  CQ ON8PB JO20
+    2026-10-20T08:47:00Z  -0.96  2594  CQ DK1XAM JO42
+    2026-10-20T08:47:00Z  -0.24  441  GJ0KYZ MM3AUB R-01
+    2026-10-20T08:47:00Z  -1.28  1978  CQ DJ2TH JO44
+    2026-10-20T08:47:15Z  -1.04  594  G8NNL G7RCQ IO91
+    2026-10-20T08:47:15Z  -1.04  2059  DJ2TH PD0JEW JO22
+    2026-10-20T08:47:15Z  -0.96  525  CQ G8KHF IO92
+    2026-10-20T08:47:15Z  -1.12  1416  M9XPN M7MPY RRR
+    2026-10-20T08:47:15Z  -1.04  441  MM3AUB GJ0KYZ RR73
+    2026-10-20T08:47:15Z  -1.12  1134  PA3GHJ G0RQL R-07
+    2026-10-20T08:47:15Z  -1.20  2275  CQ OZ9FF JO75
+    2026-10-20T08:47:15Z  -1.04  1891  HA5KN OS4K -08
+    2026-10-20T08:47:15Z  -1.12  1638  K1HOW W2TAD +06
+    2026-10-20T08:47:15Z  -1.04  2219  PD1ACS DL6YJB +07
+    2026-10-20T08:47:15Z  -0.56  1028  CQ DJ2MS JO30
+    2026-10-20T08:47:15Z  -0.88  1759  YU4FQN F4NKK JN25
+    2026-10-20T08:47:30Z  -1.04  825  EA5KEP EB1LA IN73
+    2026-10-20T08:47:30Z  -0.88  647  KD2WBX MI0NWA -11
+    2026-10-20T08:47:30Z  -1.04  528  F4FYO M0GWC 73
+    2026-10-20T08:47:30Z  -0.48  1019  W2TAD M9PMB R-18
+    2026-10-20T08:47:30Z  -1.60  2297  VE2LBI G3AKA R-19
+    2026-10-20T08:47:30Z  -1.04  2219  DL6YJB PD1ACS R+02
+    2026-10-20T08:47:30Z  -1.20  1416  M7MPY M9XPN 73
+    2026-10-20T08:47:30Z  -1.12  716  W2TAD G6PWS R-20
+    2026-10-20T08:47:30Z  -1.04  2153  VO1AW PA3GHJ RR73
+    2026-10-20T08:47:30Z  -1.12  1194  CQ ON8PB JO20
+    2026-10-20T08:47:30Z  -1.04  1591  CQ TF5B IP05
+    2026-10-20T08:47:30Z  -1.04  1856  DL6YJB F3CJ JO10
+    2026-10-20T08:47:30Z  -0.32  444  GJ0KYZ MM3AUB 73
+    2026-10-20T08:47:30Z  -0.96  397  DK3PI PD2MAC JO22
+    2026-10-20T08:47:30Z  -0.96  2594  CQ DK1XAM JO42
+    2026-10-20T08:47:30Z  -0.08  1350  CQ G8NNL IO83
+    2026-10-20T08:47:45Z  -1.04  2059  DJ2TH PD0JEW R+04
+    2026-10-20T08:47:45Z  -0.96  1500  PI4TS MM6HVT IO86
+    2026-10-20T08:47:45Z  -1.04  1134  PA3GHJ G0RQL R-07
+    2026-10-20T08:47:45Z  -0.96  525  CQ G8KHF IO92
+    2026-10-20T08:47:45Z  -1.04  2219  PD1ACS DL6YJB RR73
+    2026-10-20T08:47:45Z  -1.20  594  G8NNL G7RCQ IO91
+    2026-10-20T08:47:45Z  -1.04  2153  PA3GHJ GJ0KYZ +05
+    2026-10-20T08:47:45Z  -1.04  1978  CQ PA0EBG JO32
+    2026-10-20T08:47:45Z  -1.20  2278  CQ OZ9FF JO75
+    2026-10-20T08:47:45Z  -1.04  1891  HA5KN OS4K -08
+    2026-10-20T08:48:00Z  -1.04  825  EA5KEP EB1LA R-18
+    2026-10-20T08:48:00Z  -1.04  2219  DL6YJB PD1ACS 73
+    2026-10-20T08:48:00Z  -1.12  1197  CQ ON8PB JO20
+    2026-10-20T08:48:00Z  -0.96  2153  G0RQL PA3GHJ RR73
+    2026-10-20T08:48:00Z  -0.72  1350  CQ G8NNL IO83
+    2026-10-20T08:48:00Z  -0.88  647  KD2WBX MI0NWA -11
+    2026-10-20T08:48:00Z  -1.60  2297  VE2LBI G3AKA 73
+    2026-10-20T08:48:00Z  -1.04  716  W2TAD G6PWS R-20
+    2026-10-20T08:48:00Z  -1.20  525  G8KHF M9XPN IO91
+    2026-10-20T08:48:00Z  -1.12  1659  CQ DK4RH JO31
+    2026-10-20T08:48:00Z  -1.04  1588  SM5MEK TF5B -09
+    2026-10-20T08:48:00Z  -0.88  2528  VO1YE CT2IOK RR73
+    2026-10-20T08:48:00Z  -1.04  397  DK3PI PD2MAC JO22
+    2026-10-20T08:48:00Z  -1.04  1034  CQ HA1BF JN86
+    2026-10-20T08:48:00Z  -1.04  1856  DL6YJB F3CJ JO10
+    2026-10-20T08:48:00Z  -1.04  2594  CQ DK1XAM JO42
+    2026-10-20T08:48:00Z  -0.32  441  CQ MM3AUB IO75
+    2026-10-20T08:48:15Z  -1.04  2716  CQ F1DXP JN05
+    2026-10-20T08:48:15Z  -1.12  1794  SQ9GAI DL6BAD JO43
+    2026-10-20T08:48:15Z  -1.12  1416  CQ M7MPY IO70
+    2026-10-20T08:48:15Z  -1.04  2059  DJ2TH PD0JEW 73
+    2026-10-20T08:48:15Z  -0.48  1019  OX3AH M9PMB IO83
+    2026-10-20T08:48:15Z  -1.12  1659  DK4RH GJ0KYZ +04
+    2026-10-20T08:48:15Z  -0.96  525  M9XPN G8KHF +15
+    2026-10-20T08:48:15Z  -1.04  2422  SQ9GAI PD2RAL -05
+    2026-10-20T08:48:15Z  -1.12  1134  PA3GHJ G0RQL 73
+    2026-10-20T08:48:15Z  -1.28  594  G8NNL G7RCQ IO91
+    2026-10-20T08:48:15Z  -1.20  2275  CQ OZ9FF JO75
+    2026-10-20T08:48:15Z  -1.04  1891  MM3AUB OS4K -12
+Unique (slot, text) transmissions decoded (UTC-slot-aligned, each slot once): 83
+Unique FT8 message texts decoded: 60
+  2026-10-20T08:47:00Z  -0.48  1019  W2TAD M9PMB R-18
+  2026-10-20T08:47:00Z  -1.04  2219  DL6YJB PD1ACS JO32
+  2026-10-20T08:47:00Z  -1.20  1416  M7MPY M9XPN R-01
+  2026-10-20T08:47:00Z  -0.88  647  KD2WBX MI0NWA -11
+  2026-10-20T08:47:00Z  -1.12  716  W2TAD G6PWS R-20
+  2026-10-20T08:47:00Z  -1.60  2297  VE2LBI G3AKA R-19
+  2026-10-20T08:47:00Z  -0.80  1350  CQ G8NNL IO83
+  2026-10-20T08:47:00Z  -1.04  528  F4FYO M0GWC R+02
+  2026-10-20T08:47:00Z  -1.04  1591  YV5YDT TF5B RR73
+  2026-10-20T08:47:00Z  -0.96  1500  V31MA MM6HVT IO86
+  2026-10-20T08:47:00Z  -1.04  1856  DL6YJB F3CJ JO10
+  2026-10-20T08:47:00Z  -1.04  397  DK3PI PD2MAC JO22
+  2026-10-20T08:47:00Z  -1.12  1197  CQ ON8PB JO20
+  2026-10-20T08:47:00Z  -0.96  2594  CQ DK1XAM JO42
+  2026-10-20T08:47:00Z  -0.24  441  GJ0KYZ MM3AUB R-01
+  2026-10-20T08:47:00Z  -1.28  1978  CQ DJ2TH JO44
+  2026-10-20T08:47:15Z  -1.04  594  G8NNL G7RCQ IO91
+  2026-10-20T08:47:15Z  -1.04  2059  DJ2TH PD0JEW JO22
+  2026-10-20T08:47:15Z  -0.96  525  CQ G8KHF IO92
+  2026-10-20T08:47:15Z  -1.12  1416  M9XPN M7MPY RRR
+  2026-10-20T08:47:15Z  -1.04  441  MM3AUB GJ0KYZ RR73
+  2026-10-20T08:47:15Z  -1.12  1134  PA3GHJ G0RQL R-07
+  2026-10-20T08:47:15Z  -1.20  2275  CQ OZ9FF JO75
+  2026-10-20T08:47:15Z  -1.04  1891  HA5KN OS4K -08
+  2026-10-20T08:47:15Z  -1.12  1638  K1HOW W2TAD +06
+  2026-10-20T08:47:15Z  -1.04  2219  PD1ACS DL6YJB +07
+  2026-10-20T08:47:15Z  -0.56  1028  CQ DJ2MS JO30
+  2026-10-20T08:47:15Z  -0.88  1759  YU4FQN F4NKK JN25
+  2026-10-20T08:47:30Z  -1.04  825  EA5KEP EB1LA IN73
+  2026-10-20T08:47:30Z  -1.04  528  F4FYO M0GWC 73
+  2026-10-20T08:47:30Z  -1.04  2219  DL6YJB PD1ACS R+02
+  2026-10-20T08:47:30Z  -1.20  1416  M7MPY M9XPN 73
+  2026-10-20T08:47:30Z  -1.04  2153  VO1AW PA3GHJ RR73
+  2026-10-20T08:47:30Z  -1.04  1591  CQ TF5B IP05
+  2026-10-20T08:47:30Z  -0.32  444  GJ0KYZ MM3AUB 73
+  2026-10-20T08:47:45Z  -1.04  2059  DJ2TH PD0JEW R+04
+  2026-10-20T08:47:45Z  -0.96  1500  PI4TS MM6HVT IO86
+  2026-10-20T08:47:45Z  -1.04  2219  PD1ACS DL6YJB RR73
+  2026-10-20T08:47:45Z  -1.04  2153  PA3GHJ GJ0KYZ +05
+  2026-10-20T08:47:45Z  -1.04  1978  CQ PA0EBG JO32
+  2026-10-20T08:48:00Z  -1.04  825  EA5KEP EB1LA R-18
+  2026-10-20T08:48:00Z  -1.04  2219  DL6YJB PD1ACS 73
+  2026-10-20T08:48:00Z  -0.96  2153  G0RQL PA3GHJ RR73
+  2026-10-20T08:48:00Z  -1.60  2297  VE2LBI G3AKA 73
+  2026-10-20T08:48:00Z  -1.20  525  G8KHF M9XPN IO91
+  2026-10-20T08:48:00Z  -1.12  1659  CQ DK4RH JO31
+  2026-10-20T08:48:00Z  -1.04  1588  SM5MEK TF5B -09
+  2026-10-20T08:48:00Z  -0.88  2528  VO1YE CT2IOK RR73
+  2026-10-20T08:48:00Z  -1.04  1034  CQ HA1BF JN86
+  2026-10-20T08:48:00Z  -0.32  441  CQ MM3AUB IO75
+  2026-10-20T08:48:15Z  -1.04  2716  CQ F1DXP JN05
+  2026-10-20T08:48:15Z  -1.12  1794  SQ9GAI DL6BAD JO43
+  2026-10-20T08:48:15Z  -1.12  1416  CQ M7MPY IO70
+  2026-10-20T08:48:15Z  -1.04  2059  DJ2TH PD0JEW 73
+  2026-10-20T08:48:15Z  -0.48  1019  OX3AH M9PMB IO83
+  2026-10-20T08:48:15Z  -1.12  1659  DK4RH GJ0KYZ +04
+  2026-10-20T08:48:15Z  -0.96  525  M9XPN G8KHF +15
+  2026-10-20T08:48:15Z  -1.04  2422  SQ9GAI PD2RAL -05
+  2026-10-20T08:48:15Z  -1.12  1134  PA3GHJ G0RQL 73
+  2026-10-20T08:48:15Z  -1.04  1891  MM3AUB OS4K -12
+
+--- Recording: site=australia host=22537.proxy.kiwisdr.com:8073 (Esk, Queensland, Australia (Oceania)) band=20m freq=14074 kHz USB ---
+Recorder log (tail):
+    
+    === SEQUENTIAL FALLBACK ATTEMPT (not simultaneous) ===
+RECORDING MISSING: no WAV at /tmp/oracle_rec/rec_australia_14074.wav. This combination produced no recording (see recorder log + record notes); it is scored as missing, NOT as zero decodes.
+
+--- Recording: site=australia host=22537.proxy.kiwisdr.com:8073 (Esk, Queensland, Australia (Oceania)) band=40m freq=7074 kHz USB ---
+Recorder log (tail):
+    
+    === SEQUENTIAL FALLBACK ATTEMPT (not simultaneous) ===
+RECORDING MISSING: no WAV at /tmp/oracle_rec/rec_australia_7074.wav. This combination produced no recording (see recorder log + record notes); it is scored as missing, NOT as zero decodes.
+
+--- Recording: site=canada host=bachner.proxy.kiwisdr.com:8073 (London, Ontario, Canada (North America)) band=20m freq=14074 kHz USB ---
+Recorder log (tail):
+    Block: 00000203, RSSI:  -81.6  
+    Block: 00000204, RSSI:  -75.7  
+    Block: 00000205, RSSI:  -76.6  
+    Block: 00000206, RSSI:  -75.4  
+    Block: 00000207, RSSI:  -75.0  
+    Block: 00000208, RSSI:  -75.5  
+    Block: 00000209, RSSI:  -74.4  
+    Block: 0000020a, RSSI:  -75.1  
+    Block: 0000020b, RSSI:  -74.7  
+    Block: 0000020c, RSSI:  -74.5  
+    Block: 0000020d, RSSI:  -73.6  
+    Block: 0000020e, RSSI:  -74.3  
+    Block: 0000020f, RSSI:  -74.0  
+    Block: 00000210, RSSI:  -74.2  
+    Block: 00000211, RSSI:  -73.4  
+WAV bytes: 2166828
+Recording start for slot alignment: 2026-10-20T08:44:00Z (source: record_notes.txt parallel launch)
+WAV: 12000 Hz, 1 channel(s), 16-bit, 1083392 samples, 90.28 s
+Recording start (UTC): 2026-10-20T08:44:00.000Z
+Offset to first UTC slot boundary: 0.00 s
+Slot 2026-10-20T08:44:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:30Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:45Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:30Z (PARTIAL, 0.3 s of audio, zero-padded)
+Unique (slot, text) transmissions decoded (UTC-slot-aligned, each slot once): 0
+Unique FT8 message texts decoded: 0
+Zero decodes from this recording -- reported as measured: none.
+
+--- Recording: site=canada host=bachner.proxy.kiwisdr.com:8073 (London, Ontario, Canada (North America)) band=40m freq=7074 kHz USB ---
+Recorder log (tail):
+    Block: 00000203, RSSI:  -86.4  
+    Block: 00000204, RSSI:  -72.7  
+    Block: 00000205, RSSI:  -71.7  
+    Block: 00000206, RSSI:  -72.0  
+    Block: 00000207, RSSI:  -73.7  
+    Block: 00000208, RSSI:  -73.5  
+    Block: 00000209, RSSI:  -71.0  
+    Block: 0000020a, RSSI:  -68.7  
+    Block: 0000020b, RSSI:  -67.6  
+    Block: 0000020c, RSSI:  -67.2  
+    Block: 0000020d, RSSI:  -67.2  
+    Block: 0000020e, RSSI:  -68.3  
+    Block: 0000020f, RSSI:  -70.4  
+    Block: 00000210, RSSI:  -71.4  
+    Block: 00000211, RSSI:  -69.6  
+WAV bytes: 2166828
+Recording start for slot alignment: 2026-10-20T08:44:00Z (source: record_notes.txt parallel launch)
+WAV: 12000 Hz, 1 channel(s), 16-bit, 1083392 samples, 90.28 s
+Recording start (UTC): 2026-10-20T08:44:00.000Z
+Offset to first UTC slot boundary: 0.00 s
+Slot 2026-10-20T08:44:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:30Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:44:45Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:00Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:15Z (FULL, 15.0 s of audio)
+Slot 2026-10-20T08:45:30Z (PARTIAL, 0.3 s of audio, zero-padded)
+    2026-10-20T08:44:00Z  -1.60  1512  CQ K5RJM EM12
+    2026-10-20T08:44:00Z  -0.24  2125  JE2AVU N6DVM -10
+    2026-10-20T08:44:00Z  -1.60  1278  CQ N4NJJ DM26
+    2026-10-20T08:44:00Z  -1.60  2062  CQ CO2AJ EL83
+    2026-10-20T08:44:15Z  -1.52  1550  K1HOW W5RBD +01
+    2026-10-20T08:44:30Z  -1.60  466  <...> P4/WE9V RR73
+    2026-10-20T08:44:30Z  -1.36  1512  CQ K5RJM EM12
+    2026-10-20T08:44:30Z  -0.64  2125  JE2AVU N6DVM -10
+    2026-10-20T08:44:30Z  -1.60  1275  CQ N4NJJ DM26
+    2026-10-20T08:44:30Z  -1.60  2062  CQ CO2AJ EL83
+    2026-10-20T08:44:45Z  -1.52  1550  K1HOW W5RBD RR73
+    2026-10-20T08:44:45Z  -1.60  512  MM6HVT V31MA -18
+    2026-10-20T08:45:00Z  -0.08  2125  JL1DLN N6DVM -17
+    2026-10-20T08:45:00Z  -1.60  1422  JJ2YWP YV5YDT RR73
+    2026-10-20T08:45:00Z  -1.60  1512  JF1JDQ K5RJM -09
+    2026-10-20T08:45:00Z  -0.96  272  JA7YAA VK2WN R-07
+    2026-10-20T08:45:00Z  -1.60  1275  CQ N4NJJ DM26
+    2026-10-20T08:45:00Z  -1.60  2062  CQ CO2AJ EL83
+    2026-10-20T08:45:15Z  -0.88  1528  CQ NA4CA
+    2026-10-20T08:45:15Z  -1.60  512  MM6HVT V31MA -18
+Unique (slot, text) transmissions decoded (UTC-slot-aligned, each slot once): 20
+Unique FT8 message texts decoded: 13
+  2026-10-20T08:44:00Z  -1.60  1512  CQ K5RJM EM12
+  2026-10-20T08:44:00Z  -0.24  2125  JE2AVU N6DVM -10
+  2026-10-20T08:44:00Z  -1.60  1278  CQ N4NJJ DM26
+  2026-10-20T08:44:00Z  -1.60  2062  CQ CO2AJ EL83
+  2026-10-20T08:44:15Z  -1.52  1550  K1HOW W5RBD +01
+  2026-10-20T08:44:30Z  -1.60  466  <...> P4/WE9V RR73
+  2026-10-20T08:44:45Z  -1.52  1550  K1HOW W5RBD RR73
+  2026-10-20T08:44:45Z  -1.60  512  MM6HVT V31MA -18
+  2026-10-20T08:45:00Z  -0.08  2125  JL1DLN N6DVM -17
+  2026-10-20T08:45:00Z  -1.60  1422  JJ2YWP YV5YDT RR73
+  2026-10-20T08:45:00Z  -1.60  1512  JF1JDQ K5RJM -09
+  2026-10-20T08:45:00Z  -0.96  272  JA7YAA VK2WN R-07
+  2026-10-20T08:45:15Z  -0.88  1528  CQ NA4CA
+
+--- Recording: site=usa host=dxcentral.proxy.kiwisdr.com:8073 (Mandeville, Louisiana, USA (North America)) band=20m freq=14074 kHz USB ---
+Recorder log (tail):
+    
+    === SEQUENTIAL FALLBACK ATTEMPT (not simultaneous) ===
+RECORDING MISSING: no WAV at /tmp/oracle_rec/rec_usa_14074.wav. This combination produced no recording (see recorder log + record notes); it is scored as missing, NOT as zero decodes.
+
+--- Recording: site=usa host=dxcentral.proxy.kiwisdr.com:8073 (Mandeville, Louisiana, USA (North America)) band=40m freq=7074 kHz USB ---
+Recorder log (tail):
+    
+    === SEQUENTIAL FALLBACK ATTEMPT (not simultaneous) ===
+RECORDING MISSING: no WAV at /tmp/oracle_rec/rec_usa_7074.wav. This combination produced no recording (see recorder log + record notes); it is scored as missing, NOT as zero decodes.
+
+=== SCORECARD ===
+
+Site ireland (Carlow, Ireland (Europe)):
+  Oracle predicted: 20m better (20m expected many, 40m expected many)
+  Measured: 20m = 96 transmissions, 40m = 83 transmissions
+  Verdict: oracle CORRECT
+  Band 20m: predicted many, measured 96 transmissions (many) -> category MATCH
+  Band 40m: predicted many, measured 83 transmissions (many) -> category MATCH
+
+Site australia (Esk, Queensland, Australia (Oceania)):
+  Oracle predicted: 40m better (20m expected many, 40m expected many)
+  Measured: 20m = None transmissions, 40m = None transmissions (a recording is missing)
+  Verdict: INDETERMINATE -- missing recording cannot test the prediction.
+
+Site canada (London, Ontario, Canada (North America)):
+  Oracle predicted: 40m better (20m expected few, 40m expected many)
+  Measured: 20m = 0 transmissions, 40m = 20 transmissions
+  Verdict: oracle CORRECT
+  Band 20m: predicted few, measured 0 transmissions (none) -> category MISS
+  Band 40m: predicted many, measured 20 transmissions (many) -> category MATCH
+
+Site usa (Mandeville, Louisiana, USA (North America)):
+  Oracle predicted: 40m better (20m expected few, 40m expected many)
+  Measured: 20m = None transmissions, 40m = None transmissions (a recording is missing)
+  Verdict: INDETERMINATE -- missing recording cannot test the prediction.
+
+OVERALL: sites CORRECT=2 WRONG=0 TIE=0 INDETERMINATE=2 of 4
+NOTE: decodes are UTC-slot-aligned (lab/ft8_slot_decode.py); a decode's approximate UTC = its slot UTC + DT column. The recording start used for alignment is the record step's launch timestamp; the 2026-10-20 audit found first audio can lag that timestamp by ~1.6-2.4 s (recorder connect latency), which shifts DTs but not slot attribution.
+No radio transmission of any kind was made by this test; it only received public receivers' audio over the internet and decoded it.

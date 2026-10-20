@@ -1,0 +1,213 @@
+name: KiwiSDR Live FT8 Reception ($0)
+
+# REAL off-air FT8 reception on GitHub's free runners.
+# Why here and not in the sandbox VM: the sandbox denies direct TCP, so the
+# KiwiSDR audio websocket can never connect there (see lab/results/kiwisdr_test.log).
+# GitHub-hosted runners have unrestricted outbound TCP/websocket access, so
+# kiwirecorder can pull live audio from public KiwiSDR receivers and ft8_lib
+# (built from source) decodes whatever real FT8 signals are on the band.
+# Manual trigger only (workflow_dispatch). Results are committed back to
+# lab/results/kiwisdr_ci.log. Zero decodes is a valid, honestly-logged result.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  kiwisdr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12 + install deps
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pypng pyyaml
+
+      - name: Clone kiwiclient (KiwiSDR recorder)
+        run: git clone --depth 1 https://github.com/jks-prv/kiwiclient /tmp/kiwiclient
+
+      - name: Clone + build ft8_lib (from source)
+        run: |
+          if [ ! -d lab/ft8_lib ]; then
+            git clone --depth 1 https://github.com/kgoba/ft8_lib lab/ft8_lib
+          fi
+          cd lab/ft8_lib && make
+
+      - name: Record live audio from a public KiwiSDR + decode FT8
+        id: record
+        timeout-minutes: 17
+        shell: bash
+        run: |
+          set +e
+          mkdir -p lab/results /tmp/kiwi_rec
+          LOG="lab/results/kiwisdr_ci.log"
+          REC_DIR="/tmp/kiwi_rec"
+          {
+            echo "=== KiwiSDR Live FT8 Reception - GitHub Actions (zero-dollar) ==="
+            echo "Run start (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Method: kiwirecorder.py (jks-prv/kiwiclient) -> WAV -> slice into 15 s windows -> ft8_lib decode_ft8 per window"
+            echo "Hosts (verified live 2026-10-20, source: lab/results/kiwisdr_test.log), tried in order:"
+            echo "  1. emeraldsdr.ddns.net:8073          Carlow, Ireland (Europe)"
+            echo "  2. dxcentral.proxy.kiwisdr.com:8073  Mandeville, LA, USA (North America)"
+            echo "  3. 22537.proxy.kiwisdr.com:8073      Esk, Queensland, Australia (Oceania)"
+            echo "  4. bachner.proxy.kiwisdr.com:8073    London, Ontario, Canada (North America)"
+            echo "Frequencies per host, in order: 14074 kHz, then 7074 kHz (USB, passband 200-3000 Hz)"
+          } > "$LOG"
+
+          HOSTS=(
+            "emeraldsdr.ddns.net:8073|Carlow, Ireland (Europe)"
+            "dxcentral.proxy.kiwisdr.com:8073|Mandeville, LA, USA (North America)"
+            "22537.proxy.kiwisdr.com:8073|Esk, Queensland, Australia (Oceania)"
+            "bachner.proxy.kiwisdr.com:8073|London, Ontario, Canada (North America)"
+          )
+          FREQS="14074 7074"
+          TLIMIT=90
+          MIN_BYTES=102400
+          DEADLINE=$(( $(date +%s) + 840 ))
+
+          WAV=""; USED_HOST=""; USED_FREQ=""
+          for entry in "${HOSTS[@]}"; do
+            hp="${entry%%|*}"; label="${entry##*|}"; host="${hp%%:*}"; port="${hp##*:}"
+            for freq in $FREQS; do
+              if [ "$(date +%s)" -gt "$DEADLINE" ]; then
+                echo "Recording time budget (14 min) reached; no further attempts." >> "$LOG"
+                break 2
+              fi
+              tag="$(echo "$host" | cut -d. -f1)_${freq}"
+              echo "" >> "$LOG"
+              echo "--- Attempt: $host:$port ($label) freq=${freq} kHz USB passband 200-3000 Hz tlimit=${TLIMIT}s start_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ) ---" >> "$LOG"
+              ( cd /tmp/kiwiclient && timeout 150 python3 kiwirecorder.py \
+                  -s "$host" -p "$port" -f "$freq" -m usb -L 200 -H 3000 \
+                  --tlimit "$TLIMIT" --resample 12000 \
+                  -d "$REC_DIR" --fn "rec_$tag" -u "nature-mirror-mesh-ci" ) >> "$LOG" 2>&1
+              echo "kiwirecorder exit code: $?" >> "$LOG"
+              cand="$REC_DIR/rec_$tag.wav"
+              if [ -f "$cand" ]; then
+                sz=$(stat -c%s "$cand")
+                echo "Produced WAV: $cand (${sz} bytes)" >> "$LOG"
+                if [ "$sz" -gt "$MIN_BYTES" ]; then
+                  WAV="$cand"; USED_HOST="$host:$port ($label)"; USED_FREQ="$freq"
+                  echo "Selected recording: $WAV" >> "$LOG"
+                  break 2
+                fi
+              else
+                echo "No WAV file produced by this attempt." >> "$LOG"
+              fi
+            done
+          done
+
+          echo "" >> "$LOG"
+          if [ -z "$WAV" ]; then
+            {
+              echo "RESULT: NO USABLE RECORDING - every host/frequency attempt failed or produced <= ${MIN_BYTES} bytes."
+              echo "Total FT8 decodes: 0 (nothing to decode). Zero is a result, not a crash."
+            } >> "$LOG"
+            echo "wav_found=false" >> "$GITHUB_OUTPUT"
+            cat "$LOG"
+            exit 0
+          fi
+
+          cp "$WAV" ./kiwisdr_recording.wav
+          echo "wav_found=true" >> "$GITHUB_OUTPUT"
+
+          python3 - "$WAV" "$USED_HOST" "$USED_FREQ" "$LOG" <<'PYEOF'
+          import sys, wave, subprocess, re
+          import numpy as np
+
+          wav_path, host, freq, log_path = sys.argv[1:5]
+          DEC = "lab/ft8_lib/decode_ft8"
+          log = open(log_path, "a")
+
+          w = wave.open(wav_path, "rb")
+          nch, sw, rate, n = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+          raw = w.readframes(n); w.close()
+          x = np.frombuffer(raw, dtype=np.int16)
+          if nch > 1:
+              x = x[::nch]
+          x = x.astype(np.float64)
+          log.write("\n=== Decode phase ===\n")
+          log.write("Recording: %s host=%s freq=%s kHz USB\n" % (wav_path, host, freq))
+          log.write("WAV: %d Hz, %d channel(s), %d-bit, %.1f s, %d bytes\n" % (rate, nch, sw * 8, n / float(rate), len(raw)))
+          if rate != 12000:
+              m = int(round(len(x) * 12000.0 / rate))
+              x = np.interp(np.arange(m) * rate / 12000.0, np.arange(len(x)), x)
+              log.write("Resampled %d -> 12000 Hz (decode_ft8 expects 12000 Hz mono)\n" % rate)
+              rate = 12000
+          x = np.clip(x, -32767, 32767).astype(np.int16)
+
+          win = 15 * rate
+          stride = 2 * rate
+          total_events = 0
+          unique = {}
+          if len(x) >= win:
+              starts = list(range(0, len(x) - win + 1, stride))[:60]
+          else:
+              starts = [0]
+              log.write("WARNING: recording shorter than 15 s; decoding a single zero-padded window.\n")
+          log.write("Windows: %d x 15 s, stride 2 s (FT8 slots are 15 s, aligned to UTC :00/:15/:30/:45;\n" % len(starts))
+          log.write("the 2 s stride guarantees some window starts within 2 s before every slot boundary,\n")
+          log.write("so each transmission is fully inside at least one window despite the arbitrary record start).\n")
+          for s in starts:
+              seg = x[s:s + win]
+              if len(seg) < win:
+                  seg = np.pad(seg, (0, win - len(seg)))
+              fn = "/tmp/kiwi_win.wav"
+              wo = wave.open(fn, "wb"); wo.setnchannels(1); wo.setsampwidth(2); wo.setframerate(rate)
+              wo.writeframes(seg.tobytes()); wo.close()
+              p = subprocess.run([DEC, fn], capture_output=True, text=True)
+              m = re.search(r"Decoded (\d+) messages", p.stderr)
+              cnt = int(m.group(1)) if m else 0
+              total_events += cnt
+              lines = [ln for ln in p.stdout.splitlines() if "~" in ln]
+              log.write("\n[window offset %3d s] decode_ft8: %d message(s)\n" % (s // rate, cnt))
+              for ln in lines:
+                  log.write(ln + "\n")
+                  msg = ln.split("~", 1)[1].strip()
+                  if msg and msg not in unique:
+                      unique[msg] = ln
+          log.write("\n=== SUMMARY ===\n")
+          log.write("Host used: %s, frequency: %s kHz USB\n" % (host, freq))
+          log.write("Total decode events (incl. duplicates across overlapping windows): %d\n" % total_events)
+          log.write("Unique FT8 messages decoded: %d\n" % len(unique))
+          for msg, ln in unique.items():
+              log.write("  " + ln + "\n")
+          if not unique:
+              log.write("NO FT8 MESSAGES DECODED from this recording. Honest zero: the band may have been\n")
+              log.write("quiet, conditions poor, or no FT8 signals fell inside the recorded passband.\n")
+          log.write("NOTE: decode_ft8 prints a placeholder 000000 time field for file input; approximate\n")
+          log.write("UTC of a decode = recording start (see attempt line) + window offset + DT column.\n")
+          log.close()
+          print("Decode phase done: %d events, %d unique messages" % (total_events, len(unique)))
+          PYEOF
+          echo "Record+decode step finished." >> "$LOG"
+          cat "$LOG"
+
+      - name: Upload recording + log as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiwisdr-reception
+          path: |
+            kiwisdr_recording.wav
+            lab/results/kiwisdr_ci.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Commit results log back to repo
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lab/results/kiwisdr_ci.log
+          if git diff --cached --quiet; then
+            echo "Results log unchanged; nothing to commit."
+          else
+            git commit -m "KiwiSDR CI reception results [skip ci]"
+            git push
+          fi

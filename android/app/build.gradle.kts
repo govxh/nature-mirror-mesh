@@ -17,6 +17,11 @@ val copyPythonCore = tasks.register<Copy>("copyPythonCore") {
     into(layout.projectDirectory.dir("src/main/python"))
 }
 tasks.named("preBuild") { dependsOn(copyPythonCore) }
+// Gradle's implicit-dependency validation (hit in CI run #1): Chaquopy's
+// merge*PythonSources tasks consume src/main/python, which copyPythonCore
+// writes — declare that dependency explicitly for every variant.
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("PythonSources") }
+    .configureEach { dependsOn(copyPythonCore) }
 
 android {
     namespace = "org.naturemirrormesh.app"

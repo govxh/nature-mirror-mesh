@@ -1,0 +1,12 @@
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+
+# Core Python modules are copied from ../../app at build time by the
+# copyPythonCore task (see app/build.gradle.kts). app/ is the single
+# source of truth — never commit the copies.
+/app/src/main/python/nmm_app.py
+/app/src/main/python/postoffice.py

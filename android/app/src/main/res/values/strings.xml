@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nature Mirror Mesh</string>
+    <string name="postoffice_channel">Post office</string>
+    <string name="postoffice_notification_title">Nature Mirror Mesh</string>
+    <string name="postoffice_notification_text">Post office is running — offline messages can be stored and delivered.</string>
+</resources>

@@ -1,0 +1,83 @@
+# EVIDENCE REVIEW — Nature-Mirror Mesh claims, GRADE-appraised
+**Date:** 2026-10-20 · **Reviewer:** independent appraisal agent (self-audit support; project owner is the user)
+**Method:** Scientific Agent Skills — *scientific-critical-thinking* Appraisal Workflow: (1) question/unit fixed before judging, (2) evidence extracted before grading, (3) design/bias assessed per claim, (4) GRADE certainty **per claim** with explicit domain reasons (risk of bias, indirectness, imprecision, inconsistency), (5) every concern written traceably as *source location → observation → consequence → uncertainty → remedy*.
+**Standing rules applied:** no grade inflation; a single 90 s recording is n = 1; a green CI checkmark is not itself evidence — underlying logs/bytes were the evidence.
+**Skill citation (per skill instructions):** Kassis, T., Agarwal, V., He, Y., Patel, D., & Brueckner, A. M. (2026). *Scientific Agent Skills: A Library of Procedural Knowledge for Research Agents.* arXiv:2609.00065. https://doi.org/10.48550/arXiv.2609.00065
+
+## 0. Question and unit (Workflow step 1)
+- **System under appraisal:** the Nature-Mirror Mesh $0 evidence base — Reticulum/LXMF messaging proofs (local + GitHub Actions), ft8_lib synthetic decode proofs, one KiwiSDR off-air reception (run 39389957321) and its audit, and the (not yet executed) propagation-oracle test design.
+- **Claim types:** mostly *descriptive/feasibility* claims ("X was observed to work under conditions Y"), not causal or comparative-effectiveness claims. GRADE is applied per claim, scoped exactly as worded.
+- **Independent unit:** one test run (LXMF), one SNR level × message × seed (FT8 synthetic), one recording (off-air). Repetitions inside a unit (e.g. 38 overlapping windows over one WAV) are **not** independent replicates.
+
+## 1. Strengths of the evidence base (recorded before concerns, per workflow)
+- Raw artifacts preserved with a hash chain (artifact zip digest = GitHub's listed digest; committed log byte-identical to artifact log) — `AUDIT_kiwisdr.md §1`.
+- Failures preserved with the same care as successes (numpy CI failure, 2 mesh FAIL runs, sandbox KiwiSDR failure with exact error) — reduces reporting bias.
+- Counts cross-checked by an independent re-analysis from raw bytes rather than trusted from the producing pipeline (`AUDIT_kiwisdr.md §4, §6`).
+- Negative results explicitly fenced against misattribution ("CI success belongs to ft8_lib, not PyFT8") — `RESULTS.md`, CI section.
+
+## 2. Claim-by-claim appraisal
+
+### Claim 1 — "LXMF encrypted delivery works end-to-end between independent nodes (local + CI)"
+- **Evidence (extracted first):** Local: two runs, tokens `NMM-TEST-20261020-065214` and `…065226`, sent == received after decryption, sender router state `DELIVERED`, `SCRIPT_EXIT=0` (`RESULTS.md` Test 1; `lab/results/lxmf_test.log`). CI reproduction on a third-party machine: run 39388808248, token `NMM-TEST-20261020-074713`, verbatim lines `[A] DECRYPTED MESSAGE RECEIVED: NMM-TEST-20261020-074713`, `[B] delivery confirmed by router state=DELIVERED`, `RESULT: PASS` (`RESULTS.md` CI Check 1; `lab/results/ci_run_39388808248.log`). A third, self-contained variant passed locally (`RESULTS2.md` Task 4, token `NMM-COLAB-20261020-072753`).
+- **GRADE certainty: HIGH** — for the claim as scoped (two OS-process nodes, localhost TCP link).
+  - Risk of bias: low — outcome is an exact string match plus router delivery state; CI logs are hosted by a third party (GitHub), verbatim.
+  - Inconsistency: none across ≥4 successful runs in 3 environments.
+  - Imprecision: not material — the outcome is binary and deterministic, replicated.
+  - Indirectness: **the one real limit** — the link is loopback TCP, not radio, and both nodes run the same code on one machine locally (CI run is one machine too). The claim does not assert a radio link, so no downgrade; any extension of this claim to "works over LoRa/HF" would start at Low.
+- **Falsifier:** a run of the committed script in a clean environment where the decrypted token mismatches or delivery state never reaches `DELIVERED`.
+- **Remedy/next test:** none needed for the scoped claim. For the radio extension: repeat over an RNode/LoRa interface or a recorded-channel replay.
+
+### Claim 2 — "The 3-node routed mesh forwards correctly (S → T → C, no S–C interface)"
+- **Evidence:** One canonical post-fix PASS: `[S] path to C found: hops_to(C)=2`, `[C] DECRYPTED MESSAGE RECEIVED: NMM-MESH3-20261020-073213`, sender `DELIVERED`, exit 0 (`lab/results/lxmf_mesh3_final.log`; `RESULTS2.md` Task 2). Topology constraint (S and C share no interface) is by construction in `lab/lxmf_mesh3_test.py`.
+- **GRADE certainty: LOW.**
+  - Inconsistency: documented — ≥2 FAIL runs (`[S] TIMEOUT: no path to C`, tokens …071913 / …072917) interleaved with PASS runs *before* the fix; the failure mechanism (0.5 s `request_path()` hammering + short head-starts) is plausible but was diagnosed by the same team that ran the test, not independently reproduced.
+  - Imprecision: **n = 1 post-fix run.** No post-fix repetition count, no failure rate. A single success after a flakiness fix cannot distinguish "fixed" from "got lucky once."
+  - Risk of bias: moderate — the canonical log was *selected* as canonical after the fix; pre-fix FAILs are honestly retained, which mitigates but does not remove selection.
+- **Falsifier:** a batch of post-fix runs (say 10) showing any recurrence of `no path to C` timeouts, or delivery via a path with `hops_to(C) ≠ 2`.
+- **Remedy/next test:** run the fixed script 10× locally and in CI, report pass count/failure modes; add the mesh3 test to `lab.yml` so the count accumulates on third-party infrastructure.
+
+### Claim 3 — "ft8_lib decodes synthetic FT8 at −20 dB full-band RMS SNR (local) and −10/−15 dB (CI)"
+- **Evidence:** Local log shows exact-text decodes at clean, −5, −10, −15, −20 dB (`lab/results/ft8_lib_test.log`; e.g. at −20 dB: `000000 +10.0 +1.36 1000 ~  CQ NMM PK`, "Decoded 1 messages"; noise = numpy Gaussian, seed 42, RMS-calibrated, full-band). CI independently reproduced −10 and −15 dB on a GitHub runner with an assert on the text (`RESULTS.md` CI Check 2; `ci_run_39388808248.log`). Note the decoder's printed "+10.0/+13.5" figures are its internal score×0.5 heuristic, not the input SNR (`AUDIT_kiwisdr.md §7`).
+- **GRADE certainty: MODERATE.**
+  - Imprecision: n = 1 message (`CQ NMM PK`) × 1 noise seed (42) × 1 instance per level. No threshold search (does it fail at −21? −22?), no variation of message, seed, frequency offset, or timing offset. The claim is proven for the tested instance, not as a sensitivity curve.
+  - Indirectness: synthetic `gen_ft8` waveform + white Gaussian noise is a kind channel — no fading, multipath, QRM, or clock error. Real-channel sensitivity is separately (and better) addressed by Claim 5's off-air decodes.
+  - Consistency: local and CI agree at −10/−15; the SNR definition (full-band RMS) is *harsher* than the conventional 2.5 kHz reference, so the direction of any definitional error is conservative — a point in the claim's favour.
+- **Falsifier:** re-running the committed procedure with different seeds/messages and observing decode failure at −20 dB in a substantial fraction of trials.
+- **Remedy/next test:** sweep seeds × messages × SNR in 1 dB steps to map the actual failure threshold with a denominator (e.g. 20 trials/level), locally or as a CI matrix — cheap, fully scripted.
+
+### Claim 4 — "The artifact WAV is genuine off-air audio from emeraldsdr (Carlow, IE) at 14074 kHz"
+- **Evidence:** Artifact hash chain verified (`AUDIT_kiwisdr.md §1`: zip SHA-256 `554ba4d9…fac` = GitHub's digest; WAV SHA-256 `0bc50084…`; committed log ≡ artifact log). Header exactly as logged (12000 Hz mono 16-bit, 90.2827 s). Forensic audio tests (`AUDIT_kiwisdr.md §3`): 105/1,083, per-second RMS 1,856→7,488 (CV 0.24); noise floor varying 82×; **14 distinct simultaneous tone tracks** (18–24 peaks at single instants) vs exactly 1 for a synthetic file; burst-energy gating on the 15 s FT8 grid, contrast **+0.611**; consistent with the kiwirecorder RSSI trace inside the log. External corroboration (this review, §3 below): independent receivers — including Irish stations — reported the same senders at matching RF frequencies in the same minutes, which independently fixes the time/band/activity the WAV claims.
+- **GRADE certainty: MODERATE** (the sub-claim "genuine off-air 20 m FT8 audio recorded 2026-10-20 ≈07:57 UTC" taken alone would be High).
+  - The downgrade is for **receiver identity**: the audio forensics prove *a real receiver on the live 20 m FT8 band at that time*; that it was specifically *emeraldsdr* rests on the workflow's own connection record (attempt line + RSSI trace in `kiwisdr_ci.log`) — self-reported provenance, no operator-side log or second capture of the same audio to cross-match.
+  - Imprecision: n = 1 recording, 1 receiver, 1 band, 1 time of day — nothing here generalises to other receivers/bands.
+  - Risk of bias: low for authenticity (tests were capable of falsifying and were run on raw bytes).
+- **Falsifier:** the same audio surfacing from another source predating the run; spectral evidence of splicing/synthesis (e.g. repeated chunks — tested, 0 found); or PSK Reporter showing the band/frequencies quiet at that time (tested — the opposite was found, §3).
+- **Remedy/next test:** record the same minutes simultaneously from two different KiwiSDRs and cross-correlate decoded message sets (the oracle workflow already does dual-receiver capture); retain the recorder's own session log alongside the WAV.
+
+### Claim 5 — "65 unique FT8 texts / 92 transmissions were really transmitted over the air in that window"
+- **Evidence:** Independent slot-aligned re-decode of the raw WAV (`AUDIT_kiwisdr.md §4`; full 92-row table `lab/audit/redecode_table.md`): **all 58** of the original log's unique texts reproduced (58/58, 0 log-only), plus 7 more texts, mostly from the final slot (07:58:45) the stride method never decoded. Decodes are LDPC+CRC-checked — a false decode is cryptographically improbable per message. Counting method now regression-tested (`lab/ft8_slot_decode.py`, `lab/test_ft8_slot_alignment.py` PASS). External corroboration for a sample of the actual senders at matching frequencies/times: §3 of this review.
+- **GRADE certainty: MODERATE.**
+  - Imprecision (the main downgrade): the headline numbers are **alignment-sensitive**. Primary alignment (banner start) yields 69 (slot,text) / 49 texts; sensitivity alignment (start +2.0 s, justified by two independent phase measurements: envelope 2.60 s, DT-cluster 3.44 s) yields 92/65. The truth is at least 58 texts (alignment-independent — reproduced under both the original stride method and the sensitivity decode) and most likely 65; the exact count 92/65 depends on the +2.0 s correction being right. Absolute per-message time carries **±2 s** uncertainty (banner precedes first audio by ~1.6–2.4 s; decoder DT convention adds +1.36 s bias) — slot attribution is unaffected.
+  - Risk of bias: the re-decode used the *same decoder family* (ft8_lib) as the original pipeline — a shared decoder bug could in principle affect both; mitigated by CRC gating and now by PSK Reporter corroboration of real-world senders (§3), but not by a second, independent decoder (e.g. WSJT-X).
+  - Two texts contain `<...>` hashed callsigns — genuine decodes whose senders are unknowable from 90 s of audio; they count as transmissions, not as identified stations.
+- **Falsifier:** decoding the preserved WAV with WSJT-X/`jt9` and failing to reproduce the message set; or PSK Reporter showing the claimed senders inactive on 20 m at 07:57–07:59 UTC (tested for a sample — contradicted, §3).
+- **Remedy/next test:** (i) cross-decode the preserved artifact WAV with WSJT-X in CI for decoder independence; (ii) fix the banner-latency defect at the source (timestamp first-audio-sample, not connect start) so future counts need no sensitivity alignment; (iii) report counts as a range (primary–sensitivity) until then.
+
+### Claim 6 — "PyFT8 decode: NOT VERIFIED" (appraising the negative record itself)
+- **Evidence:** `RESULTS.md` Test 3 enumerates what was tried and how it failed: `pip install pyft8` fails on `pyaudio`/PortAudio; `--no-deps` workaround + `pyaudio` stub; PyFT8 ships no sample WAV; its `Receiver` is bound to a live audio device; the attempted symbol-level round trip (encode `CQ NMM1 AA00` → 79 symbols works) returned `None` from both the LDPC and raw-91 decoders; two specific upstream defects named (`transmitter.pack_message` calling non-existent `add_call_hashes()`; top-level `pyaudio` import in `receiver.py`). The record was left **unchanged** after ft8_lib later succeeded, and the CI section explicitly fences the two libraries apart.
+- **GRADE certainty: HIGH** — that the record accurately and completely states what was attempted and what was *not* established in this environment.
+  - The claim is correctly narrow: it asserts non-verification *here*, not PyFT8 incapability. Absence of evidence is not presented as evidence of absence — the shortest path to a real test is even documented (WSJT-X/PyFT8 on a machine with PortAudio + audio device).
+  - Residual incompleteness (noted, not a downgrade of the narrow claim): PyFT8's *intended* file-based pipeline was never run anywhere, so the evidence base contains zero information about PyFT8 decode quality either way.
+- **Falsifier:** a log or artifact in the repo showing a successful PyFT8 file decode from that session (none exists); or demonstration that a documented failure step was misreported.
+- **Remedy/next test:** if PyFT8 ever matters again, run it in the Colab notebook (audio stack available) on the preserved off-air WAV and record the result either way.
+
+### Claim 7 — "The propagation-oracle protocol is falsifiable as designed" (methodological appraisal only)
+- **Evidence of design:** `.github/workflows/oracle.yml` enforces step order — step "PREDICT: run propagation oracle (before recording)" (runs `lab/oracle_predict.py`) precedes "MEASURE: record 2 receivers × 2 bands simultaneously", which precedes "SCORE" (`lab/oracle_score.py`). The prediction is derived only from NOAA SWPC data + geometry and states this ("Integrity: prediction derived from NOAA data + geometry only; no recording was consulted" — `lab/results/oracle_prediction_header.txt`). Scoring categories are **pre-defined** (none = 0, few = 1–9, many = ≥10 unique decodes). The model is honestly labelled: the header records verbatim that `itur` 0.4.0 ships no P.533 module and that scores come from "transparent heuristic v1" — the file does not claim the model it wanted, only the model it ran. Local prediction artifact exists: made 2026-10-20T08:04:21Z for hour 08:00Z — Ireland best band 40 m (20 m 0.909 vs 40 m 0.915), Australia best band 40 m (0.859 vs 0.942), F10.7 = 120.0, Ap = 22.0.
+- **Status at time of writing:** **no `oracle_ci.log` exists in `lab/results/`, and the evidence base contains no completed CI oracle run.** This appraisal covers the *design only*; the protocol has never yet been executed end-to-end.
+- **GRADE certainty: MODERATE** — that the design is genuinely falsifiable.
+  - In its favour: prediction is generated by a separate, earlier step in the same hosted run; thresholds and the correctness rule (predicted best band must match measured best band; categories scored per band) are fixed before measurement; a WRONG verdict is a possible, reportable outcome (the scorer's code path for it was exercised in local simulation per the build report).
+  - Sealing weakness: the prediction is not hash-committed *before* the recording step within the run — the seal is GitHub's own step-ordered run log plus commit-back afterwards. Adequate against casual self-deception, weaker than a pre-run public commit of the prediction file.
+  - Discrimination weakness: Ireland's predicted margin is 0.006 (0.909 vs 0.915) — a near coin-flip; even a perfect oracle would be scored ~randomly on such calls, and a single run yields one Bernoulli trial per site. The design can falsify *gross* oracle failure, not calibrate oracle skill.
+- **Falsifier (of the design claim):** any execution path in which the prediction could be influenced by the recording (none found — `oracle_predict.py` reads only NOAA endpoints + geometry), or a scoring rule that cannot return WRONG (it can).
+- **Remedy/next test:** (i) actually execute one CI oracle run — an untested falsifiable design is a hypothesis about a method, not a result; (ii
+...[truncated 8059 chars]

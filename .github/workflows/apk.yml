@@ -1,0 +1,73 @@
+name: Build APK
+
+# Builds the Nature-Mirror Mesh Android app (android/, Chaquopy-embedded
+# Python core from app/) into an installable, debug-signed APK.
+# The APK is uploaded as a workflow artifact AND attached to the
+# app-v0.1.0 GitHub Release, which gives a permanent download link:
+#   https://github.com/govxh/nature-mirror-mesh/releases/tag/app-v0.1.0
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "android/**"
+      - "app/**"
+      - ".github/workflows/apk.yml"
+
+permissions:
+  contents: write # needed to create/update the app-v0.1.0 release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Python 3.12 (Chaquopy buildPython)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      # The repo commits gradle-wrapper.properties but not the wrapper
+      # jar (it cannot be generated on the dev VM); generate the full
+      # wrapper here, then use it like any Android project would.
+      - name: Generate Gradle wrapper
+        working-directory: android
+        run: gradle wrapper --gradle-version 8.9
+
+      - name: Build the APK (release, debug-signed)
+        working-directory: android
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nature-mirror-mesh-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Attach APK to the app-v0.1.0 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-v0.1.0
+          name: Nature Mirror Mesh app v0.1.0
+          body: |
+            Installable Android APK of Nature Mirror Mesh v0.1.0
+            (debug-signed; sideload install — Android will warn that it
+            is from an unknown source). The app is fully offline:
+            accounts, the post office and all messaging run on the
+            device itself over loopback. See android/README.md.
+          files: android/app/build/outputs/apk/release/*.apk
+          make_latest: false

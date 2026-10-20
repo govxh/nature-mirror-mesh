@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Loopback TCP (127.0.0.1) between the app and its post office, and
+         the local web UI, both use sockets, which Android gates behind
+         the INTERNET permission. The system itself never needs the
+         internet: all traffic is 127.0.0.1 on this device in v1. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required on API 34+ for a foreground service of type dataSync. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Required on API 33+ to show the post office's notification. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:label="@string/app_name"
+        android:allowBackup="false"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The LXMF propagation node ("post office") runs its own
+             Chaquopy Python interpreter and its own Reticulum instance
+             in this separate process, mirroring the VM design where
+             postoffice.py is a separate process with its own data dir.
+             It talks to the app process over 127.0.0.1 TCP only. -->
+        <service
+            android:name=".PostOfficeService"
+            android:process=":postoffice"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+    </application>
+</manifest>

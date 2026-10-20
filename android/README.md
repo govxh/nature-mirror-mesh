@@ -102,17 +102,25 @@ once inside `android/` (generates `gradlew` + the wrapper jar), then
   If RNS/LXMF ever fail to load package data files from the APK, the
   known knob is Chaquopy's `extractPackages` setting for `RNS`/`LXMF`
   in `app/build.gradle.kts`.
-- **Known risk — per-login backend processes.** On the VM, the web
-  frontend starts one *backend subprocess* per login
-  (`nmm_app.py backend`, via `sys.executable`) to hold that account's
-  Reticulum instance, and the post office is likewise spawned by
-  script. Inside an APK there is no general `sys.executable` Python
-  to spawn. The post office half is solved here (it runs in the
-  `:postoffice` Android process, and the launcher plants the pidfile
-  the frontend checks). The per-login backend spawn is **not**
-  something a launcher can shim honestly — if it fails on device, the
-  small core-side fix is to run the backend in a thread instead of a
-  subprocess on Android (the frontend↔backend protocol is already
-  file-based: `cmd.jsonl` / `status.json` in the session dir, so it is
-  thread-compatible). Until a device/Actions run proves otherwise,
-  treat in-APK login as unverified.
+- **Per-login backend processes — FIXED in core, VM-verified.**
+  On the VM, the web frontend starts one *backend subprocess* per
+  login (`nmm_app.py backend`, via `sys.executable`) to hold that
+  account's Reticulum instance — but inside an APK there is no
+  general `sys.executable` Python to spawn. The post office half
+  was already solved (it runs in the `:postoffice` Android process,
+  and the launcher plants the pidfile the frontend checks). The
+  per-login backend now has a **thread mode** in the core: when
+  `NMM_THREAD_BACKEND=1` (set by `nmm_android_launcher.start_app()`
+  before the core is imported), login runs the same backend on a
+  daemon thread inside the web process — identical file-based IPC
+  (`cmd.jsonl` / `status.json` in the session dir), identical
+  lifecycle; logout stops it via the backend's own stop flag, the
+  same flag the subprocess path's SIGTERM handler sets. Because
+  RNS allows only one Reticulum instance per process, thread mode
+  reuses the existing instance across logins and the backend
+  deregisters its LXMF destinations at logout so the same account
+  can log in again in that process. `app/test_app_flow.py` runs the
+  full 5-step user flow in BOTH modes; both pass on the VM
+  (see `lab/results/APP_TEST.md`, run stamps 20261020-120057
+  subprocess / 20261020-120123 thread). Still **device-unverified**:
+  treat in-APK login as unproven until a real Android run.

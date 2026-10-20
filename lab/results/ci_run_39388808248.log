@@ -1,0 +1,48 @@
+=== GitHub Actions run 39388808248 — verbatim step logs (retrieved 2026-10-20) ===
+Workflow: Nature-Mirror Mesh Lab ($0 CI) (.github/workflows/lab.yml)
+Run: #4 — https://github.com/govxh/nature-mirror-mesh/actions/runs/39388808248
+Commit: 7e7a24f (branch main, triggered via push) — Oct 20, 2026, 12:47 PM GMT+5
+Total duration: 33s — job "lab" succeeded in 30s.
+Steps: Set up job 1s | Checkout 0s | Set up Python 3.12 0s | Install Reticulum + LXMF 7s |
+LXMF two-node encrypted delivery test 8s | Clone + build ft8_lib (from source) 10s |
+FT8 round-trip (encode -> add noise -> decode) 0s | Post steps + Complete job.
+
+----- STEP: Install Reticulum + LXMF (package lines) -----
+pip install rns lxmf numpy
+Successfully installed cffi-2.1.1 cryptography-50.0.2 lxmf-1.2.1 numpy-2.5.4 pycparser-3.11 pyserial-3.5 rns-1.5.7
+
+----- STEP: LXMF two-node encrypted delivery test (full log) -----
+cd lab
+python lxmf_two_node_test.py
+=== LXMF two-node test ===
+Token: NMM-TEST-20261020-074713
+--- receiver.stdout ---
+[A] delivery destination: 78ee99b024437a0f10ae1e369ea4d131
+[A] announced, waiting for message...
+[A] DECRYPTED MESSAGE RECEIVED: NMM-TEST-20261020-074713
+[A] message received and written to file
+
+--- sender.stdout ---
+[B] path to A found
+[B] message sent (state=1), token=NMM-TEST-20261020-074713
+[B] delivery confirmed by router state=DELIVERED
+[B] sender done, final message state=8
+
+Sent token:     NMM-TEST-20261020-074713
+Received token: NMM-TEST-20261020-074713
+RESULT: PASS — LXMF end-to-end encrypted delivery verified over local TCP link
+
+----- STEP: FT8 round-trip (encode -> add noise -> decode) (output portion) -----
+cd lab/ft8_lib
+./gen_ft8 "CQ NMM PK" /tmp/ft8_clean.wav 1000
+(python heredoc: loads WAV, adds RMS-calibrated Gaussian noise, seed 42, at SNR -10 and -15 dB,
+ writes /tmp/ft8_snr{snr}.wav, runs ./decode_ft8, asserts "CQ NMM PK" in output)
+Packed data: 2c 91 43 6f e5 4a 9f 8a 20 00
+FSK tones: 3140652121106022274361357706050010073140652300652444750144641227635176043140652
+SNR -10 dB decode output:
+000000 +15.5 +1.36 1000 ~  CQ NMM PK
+
+SNR -15 dB decode output:
+000000 +12.5 +1.36 1000 ~  CQ NMM PK
+
+FT8 ROUND-TRIP: PASS

@@ -1,0 +1,24 @@
+Synthetic recording: /tmp/slot_test_14o600ei/synthetic_recording.wav (68.0 s, start 2026-10-20T08:00:07.300Z, epoch mod 15 = 7.30 s)
+# WAV: 12000 Hz, 1 channel(s), 16-bit, 816000 samples, 68.00 s
+# Recording start (UTC): 2026-10-20T08:00:07.300Z
+# Offset to first UTC slot boundary: 7.70 s
+# Slot 2026-10-20T08:00:15Z (FULL, 15.0 s of audio)
+# Slot 2026-10-20T08:00:30Z (FULL, 15.0 s of audio)
+# Slot 2026-10-20T08:00:45Z (FULL, 15.0 s of audio)
+# Slot 2026-10-20T08:01:00Z (FULL, 15.0 s of audio)
+# Slot 2026-10-20T08:01:15Z (PARTIAL, 0.3 s of audio, zero-padded)
+DECODED slot=2026-10-20T08:00:15Z dt=+1.36 freq=800 text=CQ T1ST JN46
+DECODED slot=2026-10-20T08:00:30Z dt=+1.36 freq=1300 text=CQ T2ST JO62
+DECODED slot=2026-10-20T08:00:45Z dt=+1.36 freq=1900 text=CQ T3ST JN58
+PASS  offset_to_first_slot == 7.70 s
+PASS  message A (CQ T1ST JN46) recovered exactly once in slot 2026-10-20T08:00:15Z
+PASS  message B (CQ T2ST JO62) recovered exactly once in slot 2026-10-20T08:00:30Z
+PASS  message C (CQ T3ST JN58) recovered exactly once in slot 2026-10-20T08:00:45Z
+PASS  noise-only slot 2026-10-20T08:01:00Z yields zero messages
+PASS  total unique (slot, text) messages == 3 (got 3)
+
+[info] naive 15 s windows from file offset 0, C = 'CQ T3ST JN58':
+[info]   naive window [30,45): C NOT recovered
+[info]   naive window [45,60): C NOT recovered
+
+RESULT: PASS - slot alignment exact: A, B, C each once, in their true UTC slots; noise slot empty.

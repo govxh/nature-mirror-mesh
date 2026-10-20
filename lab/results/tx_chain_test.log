@@ -1,0 +1,23 @@
+=== Nature-Mirror Mesh — transmission-chain test (Experiment A) ===
+Ground-truth LXMF content: NMM-TX-ZD9ULBSE7SIT
+Beacon messages: ['CQ ZD9ULB PE01', 'ZD9ULB SE7SIT PE02']
+Success criterion (pre-stated): EXACT token recovery at the -10 dB condition (no offset) + A's validated delivery == ground truth.
+--- sender.stdout ---
+[B] real LXMF message created for A's destination; message_id=aa439ff9b67013b480143141c68727a5f47dfccdb026c2e087417af6cca8eca8
+[B] packed LXMF size: 142 bytes — far beyond one FT8 slot; content therefore crosses as a token beacon (see header).
+[B] message content (ground truth at B): NMM-TX-ZD9ULBSE7SIT
+
+Clean beacon WAV: 30.0 s (2 slots x 15 s)
+[snr-05] SNR -5 dB, offset +0 Hz -> decoded=['CQ ZD9ULB PE01', 'ZD9ULB SE7SIT PE02'] recovered=NMM-TX-ZD9ULBSE7SIT PASS 
+[snr-10] SNR -10 dB, offset +0 Hz -> decoded=['CQ ZD9ULB PE01', 'ZD9ULB SE7SIT PE02'] recovered=NMM-TX-ZD9ULBSE7SIT PASS 
+[snr-15] SNR -15 dB, offset +0 Hz -> decoded=['CQ ZD9ULB PE01', 'ZD9ULB SE7SIT PE02'] recovered=NMM-TX-ZD9ULBSE7SIT PASS 
+[snr-10-off30] SNR -10 dB, offset +30 Hz -> decoded=['CQ ZD9ULB PE01', 'ZD9ULB SE7SIT PE02'] recovered=NMM-TX-ZD9ULBSE7SIT PASS 
+--- receiver.stdout ---
+[A] delivery destination: 5d5804be5339f2ac49943e34b895d365
+[A] LXMF node up; radio-delivery point armed (watching for beacon payload). No network interface connects A to B.
+[A] DECRYPTED MESSAGE RECEIVED (via simulated HF FT8 beacon): NMM-TX-ZD9ULBSE7SIT
+[A] beacon payload format validation: OK
+
+[B->A] delivery check: A received 'NMM-TX-ZD9ULBSE7SIT' == ground truth: True
+RESULT: PASS — criterion (-10 dB exact recovery + LXMF delivery) met
+Wrote lab/results/TX_CHAIN_TEST.md

@@ -1,0 +1,50 @@
+=== Experiment B — Meshtastic public MQTT transmission attempt (2026-10-20) ===
+Goal: publish ONE short public-channel text "NMM TX TEST <token>" to the Meshtastic
+public MQTT broker (mqtt.meshtastic.org), whose gateway/downlink nodes re-transmit
+public-channel traffic over license-free LoRa RF, and listen briefly for an echo.
+Timebox: 15 min. Outcome: NOT SENT — no supported/reachable path exists from this
+sandbox with the installed tooling. Exact stopping points, in order:
+
+1) LIBRARY SURFACE (meshtastic 2.7.11, lab venv):
+   - Package modules: __main__, analysis, ble_interface, mesh_interface, mt_config,
+     node, ota, powermon, protobuf, remote_hardware, serial_interface, slog,
+     stream_interface, supported_device, tcp_interface, test, tests, tunnel, util,
+     version. There is NO mqtt client module and NO paho-mqtt in the venv
+     (`pip list` shows no paho/mqtt package; websocket-client 1.9.2 is present only
+     as an unrelated dependency).
+   - The only MQTT-related API in the library is
+     mesh_interface.sendMqttClientProxyMessage(topic, data), whose own docstring
+     says: "Send an MQTT Client Proxy message TO THE RADIO." It wraps the payload
+     in a ToRadio protobuf for a CONNECTED Meshtastic device, whose firmware then
+     performs the broker connection. It is not a broker client.
+   - CLI (`meshtastic --help`): every send path (--sendtext etc.) requires a device
+     connection via --port (serial), --host (TCP to a node) or --ble. The only
+     "mqtt" string in __main__.py is a firmware config field name
+     ("mqtt", "encryptionEnabled") used with --get/--set against a connected node.
+   => The installed library offers NO standalone MQTT publish path. Meshtastic's
+      MQTT support lives in the radio firmware; without a physical/configured node
+      attached, there is nothing to publish with.
+
+2) NETWORK REACHABILITY (sandbox egress is proxy-only; direct TCP is blocked):
+   Probe: HTTP CONNECT tunnel via the sandbox egress proxy to
+   mqtt.meshtastic.org:8883 (the broker's MQTT-over-TLS port), then TLS handshake.
+   Result: PROBE FAILED: TimeoutError — the CONNECT attempt timed out (8 s).
+   The broker is not reachable from this sandbox through the only permitted egress,
+   and the broker exposes no documented websocket (wss/443) listener that the
+   proxy could carry even if a client existed.
+
+3) IDENTITY (would have stopped here anyway):
+   Publishing to the mesh requires a sender node number (!xxxxxxxx) and packets
+   built under a node identity. The only identity available would be a fabricated
+   self-chosen node number with no corresponding configured device — i.e. an
+   invented node identity. Per the experiment rules ("if it demands a configured
+   hardware node identity that we cannot honestly provide, stop and document"),
+   hand-rolling raw protobuf+PSK MQTT publishing under an invented identity was
+   NOT attempted.
+
+CONCLUSION: No message was published; nothing was transmitted by this experiment;
+no echo was or could be received. Experiment B outcome does not affect
+Experiment A's verdict. Retry path if ever wanted: any real Meshtastic node
+(e.g. a ~$25 LoRa board) with MQTT uplink enabled, or a machine with direct
+internet + the official Meshtastic web/API clienting under the operator's own
+configured node identity.

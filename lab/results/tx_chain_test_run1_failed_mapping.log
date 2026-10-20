@@ -1,0 +1,20 @@
+=== Nature-Mirror Mesh — transmission-chain test (Experiment A) ===
+Ground-truth LXMF content: NMM-TX-W6MZJNV7ZBSD
+Beacon messages: ['CQ W6MZJN BP01', 'W6MZJN V7ZBSD BP02']
+Success criterion (pre-stated): EXACT token recovery at the -10 dB condition (no offset) + A's validated delivery == ground truth.
+--- sender.stdout ---
+[B] real LXMF message created for A's destination; message_id=cd8fef83b1235a7b193e9ff4c6d795d9a96952bf91108498214c5e472ef5f1b6
+[B] packed LXMF size: 142 bytes — far beyond one FT8 slot; content therefore crosses as a token beacon (see header).
+[B] message content (ground truth at B): NMM-TX-W6MZJNV7ZBSD
+
+Clean beacon WAV: 30.0 s (2 slots x 15 s)
+[snr-05] SNR -5 dB, offset +0 Hz -> decoded=['CQ <...> BP01', '<...> <...> BP02'] recovered=None FAIL ['checksum invalid: grids say BP, payload computes PG']
+[snr-10] SNR -10 dB, offset +0 Hz -> decoded=['CQ <...> BP01', '<...> <...> BP02'] recovered=None FAIL ['checksum invalid: grids say BP, payload computes PG']
+[snr-15] SNR -15 dB, offset +0 Hz -> decoded=['CQ <...> BP01', '<...> <...> BP02'] recovered=None FAIL ['checksum invalid: grids say BP, payload computes PG']
+[snr-10-off30] SNR -10 dB, offset +30 Hz -> decoded=['CQ <...> BP01', '<...> <...> BP02'] recovered=None FAIL ['checksum invalid: grids say BP, payload computes PG']
+--- receiver.stdout ---
+[A] delivery destination: ec0576becbcd3ee4868884f2d4c80cdc
+[A] LXMF node up; radio-delivery point armed (watching for beacon payload). No network interface connects A to B.
+
+RESULT: FAIL — criterion (-10 dB exact recovery + LXMF delivery) NOT met
+Wrote lab/results/TX_CHAIN_TEST.md

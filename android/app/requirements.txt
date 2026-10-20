@@ -1,0 +1,7 @@
+# Nature-Mirror Mesh — Python requirements for the Android (Chaquopy) build.
+# Pinned to the exact versions verified in the VM lab (lab/venv):
+#   rns 1.5.7 (Reticulum), lxmf 1.2.1
+# Transitive dependencies of rns (cryptography>=3.4.7, pyserial>=3.5) are
+# resolved by pip from Chaquopy's Android wheel repository at build time.
+rns==1.5.7
+lxmf==1.2.1

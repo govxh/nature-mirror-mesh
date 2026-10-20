@@ -1,0 +1,25 @@
+=== Nature-Mirror Mesh — app acceptance test ===
+Mode: thread mode (NMM_THREAD_BACKEND=1)
+Run stamp: 20261020-120123
+PASS criterion (pre-registered): (i) same words → same ID on re-login, for both accounts; (ii) account 1 receives account 2's exact message after being offline; (iii) account 2 receives the exact reply — in EACH of the subprocess and thread modes. Sends must reach 'stored at post office'; account 1's local inbox must not contain the token before step 4.
+Wiped previous app/data for a hermetic test run.
+Post office up. Propagation node ID: 5cd60516adda71447cca9ab3098ddd65
+Expected ID for ('apple', 'river'): 118624df2e583c1bcaeca341dc813ab3
+Expected ID for ('tiger', 'moon'): f543ccb8a691f98edb0eb68e5d428940
+STEP 1 OK  — create account 1 ('apple river')
+        evidence: http=200 id=118624df2e583c1bcaeca341dc813ab3 (deterministic expectation 118624df2e583c1bcaeca341dc813ab3)
+STEP 2 OK  — clear data → account 2 ('tiger moon'), different ID
+        evidence: logged_out=True http=200 id=f543ccb8a691f98edb0eb68e5d428940
+STEP 3 OK  — account 2 sends to account 1's ID; message stored at post office
+        evidence: local_id=c0ec3f3ce831 status='stored at post office' spool_files=1 token_in_acct1_local_inbox=False
+STEP 4a OK  — re-login account 1 with only its 2 words → same ID
+        evidence: http=200 id=118624df2e583c1bcaeca341dc813ab3 (original 118624df2e583c1bcaeca341dc813ab3)
+STEP 4b OK  — account 1 receives account 2's exact message
+        evidence: content match=True token=NMM-APPTEST-20261020-120123-ONE
+STEP 5 OK  — account 1 replies; account 2 (re-login, same ID) receives the exact reply
+        evidence: reply_status='stored at post office' id2_again=f543ccb8a691f98edb0eb68e5d428940 (same=True) reply_received=True token=NMM-APPTEST-20261020-120123-TWO
+
+CRITERION (i)   same words → same ID:      True
+CRITERION (ii)  offline message delivered: True
+CRITERION (iii) reply delivered:           True
+RUN RESULT (thread mode (NMM_THREAD_BACKEND=1)): PASS

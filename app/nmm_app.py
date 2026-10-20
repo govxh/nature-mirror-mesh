@@ -36,8 +36,25 @@ How it works
   chat history, LXMF ratchet state) stays under
   app/data/users/<your-id>/, like a phone app keeping its data, and the
   post office spool is never touched by a logout.
+
+* Thread mode (env NMM_THREAD_BACKEND=1 — used inside the Android
+  APK, where Chaquopy provides no standalone Python executable to
+  spawn): the per-login backend runs on a daemon thread inside the
+  web process instead of a subprocess. The file-based IPC
+  (cmd.jsonl / ready.json / status.json in the session dir) and the
+  session lifecycle are unchanged. Two lifecycle details differ, both
+  because the process outlives a login in this mode: all logins share
+  the one process-wide Reticulum instance (RNS permits only one per
+  process; the client attachment — loopback TCP to the post office,
+  same config for every account — is identical for all of them), and
+  the backend deregisters its LXMF destinations on shutdown (the
+  delivery destination and the router's always-created
+  "propagation" destination) so the same account can log in again
+  (Transport refuses duplicate registrations). With the env var
+  unset, behaviour is exactly the subprocess mode above.
 """
 
+import contextlib
 import hashlib
 import json
 import os
@@ -59,6 +76,48 @@ CLIENT_RNS_DIR = os.path.join(DATA_DIR, "rns_client")
 USERS_DIR = os.path.join(DATA_DIR, "users")
 SESSIONS_DIR = os.path.join(DATA_DIR, "sessions")
 DEFAULT_PORT = 8899
+
+
+def thread_backend_enabled():
+    """Thread mode: run the per-login backend on a thread in this
+    process instead of spawning a subprocess (Android/Chaquopy has
+    no sys.executable to spawn). Selected by env NMM_THREAD_BACKEND=1;
+    read at call time so the embedding process can decide at startup.
+    """
+    return os.environ.get("NMM_THREAD_BACKEND") == "1"
+
+
+@contextlib.contextmanager
+def _tolerate_signal_on_worker_thread():
+    """Thread mode only: make signal.signal() tolerant during
+    backend startup.
+
+    RNS.Reticulum.__init__ and LXMF.LXMRouter.__init__ both end by
+    installing SIGINT/SIGTERM handlers via signal.signal(), which
+    raises ValueError when called from a non-main thread — exactly
+    where a thread-mode backend runs. Swap in a tolerant wrapper for
+    the startup calls: registrations that are legal go through, the
+    rest are quietly skipped (signal-based shutdown is not how a
+    thread-mode backend is stopped anyway — logout sets its
+    stop_flag). This mirrors the Android launcher's process-wide
+    shim, scoped to startup. Outside thread mode this is a no-op.
+    """
+    if not thread_backend_enabled():
+        yield
+        return
+    real_signal = signal.signal
+
+    def _tolerant(signum, handler):
+        try:
+            return real_signal(signum, handler)
+        except (ValueError, OSError):
+            return None
+
+    signal.signal = _tolerant
+    try:
+        yield
+    finally:
+        signal.signal = real_signal
 
 
 # ----------------------------------------------------------------------
@@ -220,8 +279,13 @@ class Backend:
             return
         # Learn the recipient's public key: the post office (a transport
         # node) answers path requests from its announce table, even for
-        # contacts that are currently offline.
-        deadline = time.time() + 60
+        # contacts that are currently offline. The wait is deliberately
+        # patient (240 s): a transport node's path answer rides its
+        # announce retransmit cadence and can take a minute or more to
+        # arrive — observed in testing, a valid answer landing ~1 s
+        # after a 60 s deadline had already failed the send. This
+        # system is delay-tolerant by design, so the send waits.
+        deadline = time.time() + 240
         dest_identity = None
         while time.time() < deadline and not self.stop_flag:
             if RNS.Transport.has_path(to_hash):
@@ -297,18 +361,31 @@ class Backend:
 
         os.makedirs(CLIENT_RNS_DIR, exist_ok=True)
         write_client_config(CLIENT_RNS_DIR)
-        RNS.Reticulum(configdir=CLIENT_RNS_DIR)
+        # The tolerant-signal wrapper covers the RNS/LXMF constructor
+        # calls below in thread mode (see its docstring); in
+        # subprocess mode it is a no-op and everything runs as before.
+        with _tolerate_signal_on_worker_thread():
+            if RNS.Reticulum.get_instance() is None:
+                RNS.Reticulum(configdir=CLIENT_RNS_DIR)
+            # Thread mode only: a previous login in this same process
+            # already started Reticulum (RNS raises on a second
+            # instance). The client attachment is shared — same
+            # config, same loopback TCP interface to the post office,
+            # for every account. In subprocess mode the backend
+            # process is always fresh, so the instance is always
+            # created here, exactly as before.
 
-        self.identity = RNS.Identity.from_bytes(self.seed)
-        # Router storage is per-account and persistent (like an app
-        # keeping its data): LXMF ratchet state lives there and must
-        # survive logouts, or old announces could not be decrypted.
-        self.router = LXMF.LXMRouter(
-            identity=self.identity,
-            storagepath=self.user_dir)
-        self.delivery = self.router.register_delivery_identity(
-            self.identity, display_name="NMM user", stamp_cost=None)
-        self.router.register_delivery_callback(self.on_message)
+            self.identity = RNS.Identity.from_bytes(self.seed)
+            # Router storage is per-account and persistent (like an
+            # app keeping its data): LXMF ratchet state lives there
+            # and must survive logouts, or old announces could not
+            # be decrypted.
+            self.router = LXMF.LXMRouter(
+                identity=self.identity,
+                storagepath=self.user_dir)
+            self.delivery = self.router.register_delivery_identity(
+                self.identity, display_name="NMM user", stamp_cost=None)
+            self.router.register_delivery_callback(self.on_message)
 
         real_id = RNS.hexrep(self.delivery.hash, delimit=False)
         assert real_id == self.user_id, (real_id, self.user_id)
@@ -342,8 +419,14 @@ class Backend:
         def _sigterm(signum, frame):
             self.stop_flag = True
 
-        signal.signal(signal.SIGTERM, _sigterm)
-        signal.signal(signal.SIGINT, _sigterm)
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGTERM, _sigterm)
+            signal.signal(signal.SIGINT, _sigterm)
+        # Thread mode: signal.signal() is main-thread-only and would
+        # raise here. Logout instead stops this backend by setting
+        # stop_flag directly (see ThreadBackendHandle.terminate) —
+        # the same flag the signal handler above sets, honoured by
+        # the same loop below.
 
         cmd_offset = 0
         last_announce = time.time()
@@ -394,6 +477,25 @@ class Backend:
             self.router.exit_handler()
         except Exception:
             pass
+        if thread_backend_enabled():
+            # The process outlives this backend in thread mode. LXMF's
+            # exit_handler() leaves this router's IN destinations
+            # registered with Transport — BOTH the delivery destination
+            # and the "propagation" destination LXMRouter.__init__
+            # always creates for its identity — and Transport raises
+            # KeyError on a second registration of the same hash, so
+            # re-login of this account in this process would fail in
+            # the next router's constructor. Free both registrations.
+            # (Subprocess mode: the process exits now, so this is
+            # skipped and behaviour is unchanged.)
+            for dest in (self.delivery,
+                         getattr(self.router, "propagation_destination",
+                                 None)):
+                if dest is not None:
+                    try:
+                        RNS.Transport.deregister_destination(dest)
+                    except Exception:
+                        pass
         return 0
 
 
@@ -411,6 +513,57 @@ def run_backend(argv):
 SESSION = {"proc": None, "session_dir": None, "user_id": None,
            "seed": None}
 SESSION_LOCK = threading.Lock()
+
+
+class ThreadBackendHandle:
+    """Popen-shaped handle for a Backend running on a daemon thread.
+
+    Used in thread mode (NMM_THREAD_BACKEND=1) — inside the Android
+    APK there is no standalone Python executable, so the per-login
+    backend cannot be spawned with subprocess.Popen. This exposes the
+    subset of the Popen interface the web layer uses — poll(),
+    terminate(), wait(), kill() — so the login/logout/session code is
+    identical in both modes. Stopping is cooperative: terminate()
+    sets the backend's stop_flag, the very flag the SIGTERM handler
+    sets in subprocess mode, and the backend's main loop honours it;
+    wait() joins the thread. A thread cannot be force-killed, so
+    kill() is the same cooperative stop (logout proceeds after its
+    wait timeout either way, exactly as with a killed subprocess).
+    """
+
+    def __init__(self, backend):
+        self._backend = backend
+        self.error = None
+        self._thread = threading.Thread(target=self._run,
+                                        name="nmm-backend",
+                                        daemon=True)
+
+    def _run(self):
+        try:
+            self._backend.run()
+        except Exception as e:
+            self.error = e
+            print(f"[app] backend thread error: {e!r}", flush=True)
+
+    def start(self):
+        self._thread.start()
+        return self
+
+    def poll(self):
+        return None if self._thread.is_alive() else 0
+
+    def terminate(self):
+        self._backend.stop_flag = True
+
+    def kill(self):
+        self._backend.stop_flag = True
+
+    def wait(self, timeout=None):
+        self._thread.join(timeout)
+        if self._thread.is_alive():
+            raise subprocess.TimeoutExpired("nmm-backend-thread",
+                                            timeout)
+        return 0
 
 
 def ensure_postoffice():
@@ -536,15 +689,24 @@ def api_login(data):
         session_dir = os.path.join(
             SESSIONS_DIR, f"{user_id[:12]}-{int(time.time())}")
         os.makedirs(session_dir, exist_ok=True)
-        env = dict(os.environ)
-        env["NMM_SEED_HEX"] = seed.hex()
-        log = open(os.path.join(session_dir, "backend.log"), "wb")
-        proc = subprocess.Popen(
-            [sys.executable, os.path.abspath(__file__), "backend",
-             "--session", session_dir],
-            env=env, stdout=log, stderr=subprocess.STDOUT)
-        SESSION.update(proc=proc, session_dir=session_dir,
-                       user_id=user_id, seed=seed)
+        if thread_backend_enabled():
+            # No subprocess to spawn (Android/Chaquopy): run the same
+            # Backend on a daemon thread in this process. Same session
+            # dir, same seed, same file IPC — only the carrier differs.
+            backend = Backend(seed, session_dir)
+            handle = ThreadBackendHandle(backend).start()
+            SESSION.update(proc=handle, session_dir=session_dir,
+                           user_id=user_id, seed=seed)
+        else:
+            env = dict(os.environ)
+            env["NMM_SEED_HEX"] = seed.hex()
+            log = open(os.path.join(session_dir, "backend.log"), "wb")
+            proc = subprocess.Popen(
+                [sys.executable, os.path.abspath(__file__), "backend",
+                 "--session", session_dir],
+                env=env, stdout=log, stderr=subprocess.STDOUT)
+            SESSION.update(proc=proc, session_dir=session_dir,
+                           user_id=user_id, seed=seed)
     # Wait for the backend to be ready (identity live, post office set).
     ready_file = os.path.join(session_dir, "ready.json")
     deadline = time.time() + 90

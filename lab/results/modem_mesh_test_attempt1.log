@@ -1,0 +1,53 @@
+=== Nature-Mirror Mesh — DIGITAL LAB 2: multi-hop mesh, every link a simulated radio link ===
+Token: NMM-MODEMMESH-D2F919DTL06M
+Pre-registered criterion: PASS = C's LXMF layer validates the message (content == token AND LXMF hash == sent hash) after traversing BOTH modem hops at -10 dB per hop, within 3 end-to-end (LXMF) attempts; S hops_to(C)==2 and T hops_to(C)==1.
+
+--- transport.stdout ---
+[2026-10-20 10:05:11] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_t/interfaces"
+[2026-10-20 10:05:11] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_t/interfaces"
+[T] transport node up (modem interfaces only), transport identity 80003f12fb5661b4f05691a27c8b2562
+[T] learned path to C over modem hop: hops_to(C)=1 (1 = C is one modem hop from T)
+--- receiver.stdout ---
+[2026-10-20 10:05:17] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_c/interfaces"
+[C] delivery destination: c0931c6aaa187c137e155fb235c6ed1f
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+--- sender.stdout ---
+[2026-10-20 10:05:27] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_s/interfaces"
+[S] path to C found over modem hops: hops_to(C)=2 (2 proves the path is S -> T -> C; S has NO direct link to C)
+[S] message handed to router, token=NMM-MODEMMESH-D2F919DTL06M
+[S] sent LXMF hash=a2b4e44d73d6e61dc7af9c04e9c2c70bbea497167471ac7cc79bb01f2a8710a4 packed=151 B
+[S] message state=1 delivery_attempts=1
+[S] message state=2 delivery_attempts=1
+[S] message state=1 delivery_attempts=1
+[S] message state=255 delivery_attempts=5
+[S] router gave up (state=FAILED)
+[S] sender done: {'state': 255, 'delivered': False, 'delivery_attempts': 5, 'hops_to_c': 2}
+
+--- Per-hop modem statistics ---
+  hop S->T: frames_tx=13 rx_ok=8 rx_fail=5 distinct_packets=13 retransmitted_frames=0 airtime=300.7 s max_pkt=227 B
+  hop T->C: frames_tx=18 rx_ok=12 rx_fail=6 distinct_packets=12 retransmitted_frames=6 airtime=640.7 s max_pkt=244 B
+  hop C->T: frames_tx=18 rx_ok=12 rx_fail=6 distinct_packets=18 retransmitted_frames=0 airtime=750.8 s max_pkt=228 B
+  hop T->S: frames_tx=17 rx_ok=12 rx_fail=2 distinct_packets=10 retransmitted_frames=7 airtime=707.6 s max_pkt=244 B
+  TOTAL simulated airtime: 2399.8 s; wall clock (sender phase): 249 s; max RNS packet seen: 244 B (modem frame capacity 4096 B -> frames-per-packet = 1)
+
+Sent token:     NMM-MODEMMESH-D2F919DTL06M
+Received token: None
+Sent LXMF hash:     a2b4e44d73d6e61dc7af9c04e9c2c70bbea497167471ac7cc79bb01f2a8710a4
+Received LXMF hash: None
+LXMF delivery_attempts at S: 5 (criterion: <= 3)
+S hops_to(C)=2, T hops_to(C)=1
+S router DELIVERED state reached: False
+RESULT: FAIL — content_ok=False hash_ok=False attempts_ok=False hops_ok=True both_hops_carried=True

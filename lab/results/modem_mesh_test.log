@@ -1,0 +1,44 @@
+=== Nature-Mirror Mesh — DIGITAL LAB 2: multi-hop mesh, every link a simulated radio link ===
+Token: NMM-MODEMMESH-ARGV8PP598JR
+Pre-registered criterion: PASS = C's LXMF layer validates the message (content == token AND LXMF hash == sent hash) after traversing BOTH modem hops at -10 dB per hop, within 3 end-to-end (LXMF) attempts; S hops_to(C)==2 and T hops_to(C)==1.
+
+--- transport.stdout ---
+[2026-10-20 10:11:48] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_t/interfaces"
+[2026-10-20 10:11:48] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_t/interfaces"
+[T] transport node up (modem interfaces only), transport identity be778b40a1bef199693a020d8dc0bc18
+[T] learned path to C over modem hop: hops_to(C)=1 (1 = C is one modem hop from T)
+[T] relay job done (C received the message); T forwarded traffic between S and C over modem hops
+--- receiver.stdout ---
+[2026-10-20 10:11:54] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_c/interfaces"
+[C] delivery destination: 58892fe2d9d6206bedb9436cd5722548
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] announced over modem hop (will propagate C -> T -> S)
+[C] DECRYPTED MESSAGE RECEIVED (via 2 modem hops): NMM-MODEMMESH-ARGV8PP598JR
+[C] LXMF message hash: 1a827d8f58ef5a646317e8d670231a1c25d102d321c5adab55d3eca9eaa84509
+[C] message received and written to file
+--- sender.stdout ---
+[2026-10-20 10:12:04] [Notice]   Loading external interface "ModemInterface.py" from "/home/hatch/workspace/nature-mirror-mesh/lab/modem_mesh_work/node_s/interfaces"
+[S] path to C found over modem hops: hops_to(C)=2 (2 proves the path is S -> T -> C; S has NO direct link to C)
+[S] message handed to router, token=NMM-MODEMMESH-ARGV8PP598JR
+[S] sent LXMF hash=1a827d8f58ef5a646317e8d670231a1c25d102d321c5adab55d3eca9eaa84509 packed=151 B
+[S] message state=1 delivery_attempts=1
+[S] message state=2 delivery_attempts=1
+[S] message state=8 delivery_attempts=1
+[S] delivery confirmed by router state=DELIVERED (proof crossed both modem hops back)
+[S] sender done: {'state': 8, 'delivered': True, 'delivery_attempts': 1, 'hops_to_c': 2}
+
+--- Per-hop modem statistics ---
+  hop S->T: frames_tx=18 rx_ok=9 rx_fail=3 distinct_packets=6 retransmitted_frames=12 airtime=530.6 s max_pkt=227 B
+  hop T->C: frames_tx=21 rx_ok=18 rx_fail=3 distinct_packets=5 retransmitted_frames=16 airtime=742.9 s max_pkt=244 B
+  hop C->T: frames_tx=15 rx_ok=11 rx_fail=1 distinct_packets=5 retransmitted_frames=10 airtime=524.8 s max_pkt=228 B
+  hop T->S: frames_tx=27 rx_ok=21 rx_fail=6 distinct_packets=5 retransmitted_frames=22 airtime=1002.4 s max_pkt=244 B
+  TOTAL simulated airtime: 2800.7 s; wall clock (sender phase): 26 s; max RNS packet seen: 244 B (modem frame capacity 4096 B -> frames-per-packet = 1)
+
+Sent token:     NMM-MODEMMESH-ARGV8PP598JR
+Received token: NMM-MODEMMESH-ARGV8PP598JR
+Sent LXMF hash:     1a827d8f58ef5a646317e8d670231a1c25d102d321c5adab55d3eca9eaa84509
+Received LXMF hash: 1a827d8f58ef5a646317e8d670231a1c25d102d321c5adab55d3eca9eaa84509
+LXMF delivery_attempts at S: 1 (criterion: <= 3)
+S hops_to(C)=2, T hops_to(C)=1
+S router DELIVERED state reached: True
+RESULT: PASS — content_ok=True hash_ok=True attempts_ok=True hops_ok=True both_hops_carried=True

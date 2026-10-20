@@ -11,9 +11,10 @@ name: Propagation Oracle Test ($0)
 #      installs but ships NO itu533 module), so the fallback
 #      transparent "heuristic v1" is what actually scores, and the
 #      prediction says so.
-#   2. MEASURE: 4 kiwirecorder recordings SIMULTANEOUSLY (background
+#   2. MEASURE: 8 kiwirecorder recordings SIMULTANEOUSLY (background
 #      processes launched together on a UTC minute boundary):
-#      Ireland (Carlow) + Australia (Esk, Queensland), each on
+#      Ireland (Carlow) + Australia (Esk, Queensland) + Canada
+#      (London, Ontario) + USA (Mandeville, Louisiana), each on
 #      14074 kHz (20 m) and 7074 kHz (40 m) USB, 90 s each.
 #      If a receiver rejects the 2nd simultaneous connection from this
 #      runner, the failed combo is retried ONCE sequentially and the
@@ -39,7 +40,7 @@ permissions:
 jobs:
   oracle:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,10 +70,10 @@ jobs:
           echo "--- oracle_prediction.json ---"
           cat lab/results/oracle_prediction.json
 
-      # ---- STEP 2 of the protocol: MEASURE, all four at once ----
-      - name: "MEASURE: record 2 receivers x 2 bands simultaneously"
+      # ---- STEP 2 of the protocol: MEASURE, all eight at once ----
+      - name: "MEASURE: record 4 receivers x 2 bands simultaneously"
         id: record
-        timeout-minutes: 18
+        timeout-minutes: 28
         shell: bash
         run: |
           set +e
@@ -82,11 +83,11 @@ jobs:
           MIN_OK=360000
           {
             echo "=== Record step notes ==="
-            echo "Plan: 4 simultaneous kiwirecorder runs (Ireland + Australia, 14074 + 7074 kHz USB, passband 200-3000 Hz, tlimit ${TLIMIT}s, resample 12000)."
+            echo "Plan: 8 simultaneous kiwirecorder runs (Ireland + Australia + Canada + USA, 14074 + 7074 kHz USB, passband 200-3000 Hz, tlimit ${TLIMIT}s, resample 12000)."
             echo "Notes prepared (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > "$NOTES"
 
-          # Start on the next UTC minute boundary so all four 90 s
+          # Start on the next UTC minute boundary so all eight 90 s
           # recordings cover the same FT8 slots.
           now=$(date +%s); wait_s=$(( 60 - (now % 60) ))
           if [ "$wait_s" -lt 3 ]; then wait_s=$(( wait_s + 60 )); fi
@@ -98,7 +99,7 @@ jobs:
           launch() {
             local site="$1" host="$2" port="$3" freq="$4"
             local tag="rec_${site}_${freq}"
-            ( cd /tmp/kiwiclient && timeout 150 python3 kiwirecorder.py \
+            ( cd /tmp/kiwiclient && timeout 180 python3 kiwirecorder.py \
                 -s "$host" -p "$port" -f "$freq" -m usb -L 200 -H 3000 \
                 --tlimit "$TLIMIT" --resample 12000 \
                 -d /tmp/oracle_rec --fn "$tag" \
@@ -110,6 +111,10 @@ jobs:
           launch ireland   emeraldsdr.ddns.net        8073 7074
           launch australia 22537.proxy.kiwisdr.com    8073 14074
           launch australia 22537.proxy.kiwisdr.com    8073 7074
+          launch canada    bachner.proxy.kiwisdr.com  8073 14074
+          launch canada    bachner.proxy.kiwisdr.com  8073 7074
+          launch usa       dxcentral.proxy.kiwisdr.com 8073 14074
+          launch usa       dxcentral.proxy.kiwisdr.com 8073 7074
           for i in "${!PIDS[@]}"; do
             wait "${PIDS[$i]}"; rc=$?
             echo "Parallel recorder ${TAGS[$i]}: exit code $rc" >> "$NOTES"
@@ -131,7 +136,7 @@ jobs:
               echo "SEQUENTIAL FALLBACK for ${tag}: parallel attempt yielded ${sz} bytes (< ${MIN_OK}); retrying sequentially at $(date -u +%Y-%m-%dT%H:%M:%SZ). This recording is NOT simultaneous with the others." >> "$NOTES"
               echo "" >> "/tmp/oracle_rec/${tag}.recorder.log"
               echo "=== SEQUENTIAL FALLBACK ATTEMPT (not simultaneous) ===" >> "/tmp/oracle_rec/${tag}.recorder.log"
-              ( cd /tmp/kiwiclient && timeout 150 python3 kiwirecorder.py \
+              ( cd /tmp/kiwiclient && timeout 180 python3 kiwirecorder.py \
                   -s "$host" -p "$port" -f "$freq" -m usb -L 200 -H 3000 \
                   --tlimit "$TLIMIT" --resample 12000 \
                   -d /tmp/oracle_rec --fn "$tag" \
@@ -146,6 +151,10 @@ jobs:
           retry ireland   emeraldsdr.ddns.net        8073 7074
           retry australia 22537.proxy.kiwisdr.com    8073 14074
           retry australia 22537.proxy.kiwisdr.com    8073 7074
+          retry canada    bachner.proxy.kiwisdr.com  8073 14074
+          retry canada    bachner.proxy.kiwisdr.com  8073 7074
+          retry usa       dxcentral.proxy.kiwisdr.com 8073 14074
+          retry usa       dxcentral.proxy.kiwisdr.com 8073 7074
           echo "Record step finished (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$NOTES"
           ls -la /tmp/oracle_rec >> "$NOTES" 2>&1
           cat "$NOTES"
@@ -181,7 +190,38 @@ jobs:
           git add lab/results/oracle_prediction.json lab/results/oracle_prediction_header.txt lab/results/oracle_ci.log
           if git diff --cached --quiet; then
             echo "Oracle results unchanged; nothing to commit."
-          else
-            git commit -m "Oracle test results [skip ci]"
-            git push
+            exit 0
           fi
+          git commit -m "Oracle test results [skip ci]"
+          # Run #1 lesson: a bare `git push` lost the results when the
+          # remote gained commits during the run (push rejected,
+          # non-fast-forward) and oracle_ci.log never reached the repo.
+          # Now: fetch + rebase onto the latest origin/main and retry
+          # the push up to 3 times. If every attempt fails, the step
+          # still succeeds (warning only) and the FULL oracle_ci.log is
+          # echoed into this job log as the last-resort record -- the
+          # run's success reflects the science, not the git race.
+          pushed=0
+          for attempt in 1 2 3; do
+            echo "Push attempt ${attempt}: fetching origin main..."
+            git fetch origin main
+            if git rebase FETCH_HEAD; then
+              echo "Rebased onto latest origin/main (attempt ${attempt})."
+            else
+              echo "Rebase failed on attempt ${attempt}; aborting rebase and retrying."
+              git rebase --abort || true
+            fi
+            if git push origin HEAD:main; then
+              pushed=1
+              echo "Push succeeded on attempt ${attempt}."
+              break
+            fi
+            echo "Push attempt ${attempt} failed."
+          done
+          if [ "$pushed" -ne 1 ]; then
+            echo "::warning::Oracle results could not be pushed after 3 attempts (remote kept moving). The full oracle_ci.log follows in this job log as the last-resort record."
+            echo "===== BEGIN oracle_ci.log (last-resort record) ====="
+            cat lab/results/oracle_ci.log
+            echo "===== END oracle_ci.log ====="
+          fi
+          exit 0

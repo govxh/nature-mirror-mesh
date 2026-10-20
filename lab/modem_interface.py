@@ -36,6 +36,28 @@
 # needed; frames-per-packet is 1.0 by construction and the stats
 # verify the size headroom empirically.
 #
+# DUPLICATE SUPPRESSION (added 2026-10-20, DIGITAL LAB 3 debugging):
+# frame_repeats puts up to 3 identical copies of every packet on the
+# air per hop, and a transport node re-forwards each copy it receives,
+# so the far interface can demodulate the SAME packet many times.
+# A real interface never delivers one packet repeatedly, and RNS does
+# not expect it: Resource.receive_part() resets the resource status
+# to TRANSFERRING on every part packet it is handed, so a duplicate
+# part arriving while Resource.assemble() runs (after it has set
+# COMPLETE and sent the proof, before the LXMF delivery callback
+# checks the status) silently reverts the status and LXMF drops the
+# assembled message — the sender still sees DELIVERED, because the
+# proof was already sent. Observed live in longmsg_mesh_test (500 B
+# content, 2-part resource): delivery_resource_concluded fired with
+# status=3 (TRANSFERRING) instead of 6 (COMPLETE) and no message was
+# delivered. Fix: this interface injects each distinct packet payload
+# at most once per DEDUP_WINDOW_S window (exact-payload SHA-256);
+# later copies are counted as "rx_dup" and dropped. Loss protection
+# is unaffected: suppression only starts AFTER a copy has decoded and
+# been injected, so if every copy of a frame is lost, nothing was
+# injected and nothing is suppressed.
+DEDUP_WINDOW_S = 300.0
+
 # LINK-LEVEL REPETITION (frame_repeats, default 1): at -10 dB the
 # modem's per-frame loss for 200-250 B packets is roughly 1/3 (the
 # 9/10 figure from DIGITAL LAB 1 was for 147 B packets), and a
@@ -112,6 +134,7 @@ class ModemInterface(Interface):
         self._tx_seq = 0
         self._stop = False
         self._seen = set()
+        self._injected = {}       # payload sha256 -> last inject time
         self.max_packet_seen = 0
 
         self._stat({"event": "interface_up", "name": self.name,
@@ -181,6 +204,26 @@ class ModemInterface(Interface):
                 self._seen.add(name)
                 payload = self._modem.modem_decode(samples)
                 if payload is not None:
+                    phash = hashlib.sha256(payload).hexdigest()
+                    now = time.time()
+                    last = self._injected.get(phash)
+                    if last is not None and now - last < DEDUP_WINDOW_S:
+                        self._stat({"event": "rx_dup",
+                                    "file": name,
+                                    "pkt_len": len(payload),
+                                    "pkt_sha16": phash[:16]})
+                        try:
+                            os.rename(path, os.path.join(
+                                self._processed_dir, name))
+                        except Exception:
+                            pass
+                        continue
+                    self._injected[phash] = now
+                    if len(self._injected) > 4096:
+                        cutoff = now - DEDUP_WINDOW_S
+                        self._injected = {h: t for h, t in
+                                          self._injected.items()
+                                          if t > cutoff}
                     self.rxb += len(payload)
                     self._stat({"event": "rx_ok",
                                 "file": name,

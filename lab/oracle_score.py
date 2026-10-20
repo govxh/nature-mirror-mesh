@@ -24,7 +24,9 @@ Writes lab/results/oracle_ci.log:
   4. SCORECARD: per site "oracle predicted X better; measured:
      20m = N unique, 40m = M unique -> oracle CORRECT / WRONG / TIE",
      plus per-band predicted-category vs measured-category agreement
-     and one overall line.
+     and one overall line aggregating all 4 sites (counts of CORRECT /
+     WRONG / TIE / INDETERMINATE of 4). A site with a missing band or
+     missing recordings scores INDETERMINATE, never zero-filled.
 
 Honesty rules baked in:
   * Zero decodes is a result, reported as 0 -- never dressed up.
@@ -51,6 +53,12 @@ COMBOS = [
      [(14074, "20m"), (7074, "40m")]),
     ("australia", "22537.proxy.kiwisdr.com:8073",
      "Esk, Queensland, Australia (Oceania)",
+     [(14074, "20m"), (7074, "40m")]),
+    ("canada", "bachner.proxy.kiwisdr.com:8073",
+     "London, Ontario, Canada (North America)",
+     [(14074, "20m"), (7074, "40m")]),
+    ("usa", "dxcentral.proxy.kiwisdr.com:8073",
+     "Mandeville, Louisiana, USA (North America)",
      [(14074, "20m"), (7074, "40m")]),
 ]
 
@@ -144,8 +152,8 @@ def main():
     log.append("=== PROPAGATION ORACLE TEST -- RESULTS (GitHub Actions, "
                "zero-dollar, receive-only) ===")
     log.append("Method: oracle_predict.py FIRST (NOAA solar data + "
-               "model), then 4 simultaneous kiwirecorder recordings "
-               "(2 receivers x 2 bands, 90 s), then ft8_lib decode + "
+               "model), then 8 simultaneous kiwirecorder recordings "
+               "(4 receivers x 2 bands, 90 s), then ft8_lib decode + "
                "this scorecard. Prediction precedes measurement; the "
                "score is computed from the committed prediction file.")
 

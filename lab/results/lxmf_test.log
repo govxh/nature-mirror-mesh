@@ -1,0 +1,18 @@
+=== LXMF two-node test ===
+Token: NMM-TEST-20261020-065226
+--- receiver.stdout ---
+[A] delivery destination: a44cb234acd1b85b475df8c19503ffcf
+[A] announced, waiting for message...
+[A] DECRYPTED MESSAGE RECEIVED: NMM-TEST-20261020-065226
+[A] message received and written to file
+
+--- sender.stdout ---
+[B] path to A found
+[B] message sent (state=1), token=NMM-TEST-20261020-065226
+[B] delivery confirmed by router state=DELIVERED
+[B] sender done, final message state=8
+
+Sent token:     NMM-TEST-20261020-065226
+Received token: NMM-TEST-20261020-065226
+RESULT: PASS — LXMF end-to-end encrypted delivery verified over local TCP link
+SCRIPT_EXIT=0

@@ -1,0 +1,44 @@
+name: Mesh3 Repetition ($0 CI)
+
+# Repetition evidence for EVIDENCE_REVIEW Claim 2 (3-node LXMF mesh).
+# Runs lab/mesh3_repeat.py — the same wrapper used for the local evidence
+# run — which executes lab/lxmf_mesh3_test.py 10 times sequentially and
+# reports the pass RATE. Pre-registered criterion (see wrapper header):
+# >= 8/10 PASS = transport forwarding considered reliable; the wrapper
+# exits 1 below that, so a red job here is the criterion working, not a
+# harness bug. The full per-run record is uploaded as an artifact.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - lab/lxmf_mesh3_test.py
+      - lab/mesh3_repeat.py
+      - .github/workflows/mesh3.yml
+
+jobs:
+  mesh3-repetition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Reticulum + LXMF
+        run: pip install rns lxmf
+
+      - name: Mesh3 repetition (10 runs, criterion >= 8/10 PASS)
+        run: python lab/mesh3_repeat.py 10
+
+      - name: Upload repetition log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesh3-repetition-log
+          path: lab/results/mesh3_repeat_last.log
+          if-no-files-found: warn

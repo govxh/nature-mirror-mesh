@@ -1,0 +1,263 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nature-Mirror Mesh</title>
+<style>
+ body{font-family:system-ui,sans-serif;margin:0;background:#0e1512;color:#e8f0ea}
+ .wrap{max-width:640px;margin:0 auto;padding:16px}
+ h1{font-size:20px} .card{background:#16211b;border:1px solid #24402f;border-radius:12px;padding:14px;margin:12px 0}
+ input,button,textarea{font-size:16px;padding:9px;border-radius:8px;border:1px solid #33513d;background:#0e1512;color:#e8f0ea;-webkit-user-select:text;user-select:text}
+ button{background:#1e4630;cursor:pointer} button:hover{background:#27603f}
+ button:disabled{opacity:.45;cursor:wait}
+ .big{font-size:18px;padding:14px;width:100%;background:#27603f}
+ .mono{font-family:monospace;word-break:break-all}
+ input[readonly]{background:#101a13}
+ .small{font-size:13px;color:#9db8a6}
+ .warn{color:#ffd27d;font-size:14px}
+ .msg{margin:6px 0;padding:8px 10px;border-radius:10px;max-width:85%}
+ .mine{background:#1e4630;margin-left:auto} .theirs{background:#1a2630;margin-right:auto}
+ .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .row>*{flex:1}
+ .row .copybtn{flex:0 0 auto}
+ .contact{padding:8px;border:1px solid #33513d;border-radius:8px;margin:4px 0;cursor:pointer;background:none;width:100%;text-align:left;color:#e8f0ea}
+ .contact.sel{background:#1e4630}
+ #err{display:none;background:#4a1d1d;border:1px solid #8a3b3b;color:#ffb4b4;border-radius:10px;padding:10px 12px;margin:12px 0;font-size:14px}
+ #busy{color:#ffd27d;min-height:18px}
+</style>
+<div class="wrap">
+ <h1>🌿 Nature-Mirror Mesh <span class="small">app v0.1.2</span></h1>
+ <div id="status" class="card small">⏳ Starting…</div>
+ <div id="err"></div>
+ <div id="busy" class="small"></div>
+ <div id="app"><div class="card">⏳ Starting…</div></div>
+ <p class="small">Offline-first chat. Messages for offline friends wait
+ at your local Post Office until they log in. An account key is just
+ 2 words — <b>for testing only</b>, never use it for anything valuable.</p>
+</div>
+<script>
+let state=null, selected=null, lastSig=null, lastLoggedIn=null;
+
+async function api(path, data){
+  let r;
+  try{
+    r = await fetch(path, data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{});
+  }catch(e){
+    return {error:'could not reach the app server ('+e.message+') — is the app still starting?'};
+  }
+  try{ return await r.json(); }
+  catch(e){ return {error:'server answered HTTP '+r.status+' with an unreadable reply'}; }
+}
+function esc(s){return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function showErr(msg){ const e=document.getElementById('err'); e.textContent='⚠ '+msg; e.style.display='block'; }
+function clearErr(){ const e=document.getElementById('err'); e.textContent=''; e.style.display='none'; }
+function setBusy(on, msg){
+  document.querySelectorAll('button').forEach(b=>b.disabled=on);
+  document.getElementById('busy').textContent = on ? ('⏳ '+(msg||'Working…')) : '';
+}
+
+/* ------------------------------------------------------------------
+   Re-render safety — the v0.1.1 device bug (confirmed root cause):
+   the old page rebuilt #app's innerHTML every 2.5 s unconditionally,
+   erasing whatever the user was typing into the word fields. Now:
+   (1) a rebuild happens ONLY when the rendered state actually
+       changed (signature compare);
+   (2) a rebuild NEVER happens while the user is typing in a text
+       field, unless the login state itself flipped (then it must);
+   (3) when a rebuild does happen, every input's value, the focused
+       element and its selection are captured first and restored
+       after — typing survives rendering, always.
+------------------------------------------------------------------ */
+function stateSig(st){
+  const b = st.backend||{};
+  return JSON.stringify({l:st.logged_in, id:st.id||null, w:st.words||null,
+    pf:st.postoffice_file, pn:!!b.pn_path, ts:b.transfer_state,
+    c:st.contacts||[], i:st.inbox||[], s:st.sent||[], sel:selected});
+}
+function captureInputs(){
+  const cap={values:{}, focusId:null, selStart:null, selEnd:null};
+  document.querySelectorAll('#app input, #app textarea').forEach(el=>{
+    if(el.id) cap.values[el.id]=el.value;
+  });
+  const ae=document.activeElement;
+  if(ae && ae.id && document.getElementById('app').contains(ae)){
+    cap.focusId=ae.id;
+    try{ cap.selStart=ae.selectionStart; cap.selEnd=ae.selectionEnd; }catch(e){}
+  }
+  return cap;
+}
+function restoreInputs(cap){
+  Object.keys(cap.values).forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && el.value!==cap.values[id]) el.value=cap.values[id];
+  });
+  if(cap.focusId){
+    const el=document.getElementById(cap.focusId);
+    if(el){ el.focus();
+      if(cap.selStart!==null && el.setSelectionRange){
+        try{ el.setSelectionRange(cap.selStart, cap.selEnd); }catch(e){}
+      }
+    }
+  }
+}
+function userIsTyping(){
+  const ae=document.activeElement;
+  return !!(ae && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')
+            && document.getElementById('app').contains(ae));
+}
+
+async function refresh(){
+  const r = await api('/api/state');
+  if(r && !r.error){ state=r; render(); }
+  else{
+    showErr('Status check failed: '+((r&&r.error)||'unknown error'));
+    if(!state){ state={logged_in:false}; render(); }
+  }
+}
+async function pollHealth(){
+  const el=document.getElementById('status');
+  let h;
+  try{ const r=await fetch('/api/health'); h=await r.json(); }
+  catch(e){ el.textContent='⏳ Starting… (waiting for the app server)'; return; }
+  let t = (h.postoffice==='connected')
+    ? 'Post office: connected ✓'
+    : 'Post office: not found — it starts by itself, give it a moment';
+  if(h.logged_in){
+    t += ' · Logged in';
+    if(h.backend && h.backend.pn_path) t += ' · Post office link: live ✓';
+    else if(h.backend_ready===false) t += ' · Backend: starting…';
+    else t += ' · Post office link: connecting…';
+  } else {
+    t += ' · Not logged in';
+  }
+  el.textContent=t;
+}
+
+function render(force){
+  if(!state) return;
+  const sig = stateSig(state);
+  const loginChanged = (lastLoggedIn !== state.logged_in);
+  if(!force){
+    if(sig===lastSig && !loginChanged) return;      // nothing changed: no rebuild
+    if(userIsTyping() && !loginChanged) return;     // never rebuild under the user's fingers
+  }
+  const cap = captureInputs();
+  lastSig = sig; lastLoggedIn = state.logged_in;
+  const el = document.getElementById('app');
+  if(!state.logged_in){
+    el.innerHTML = `<div class="card"><h3>New here?</h3>
+      <p><button class="big" onclick="autoCreate()">✨ Create account</button></p>
+      <p class="small">No typing needed — the app invents your 2 secret
+      words for you and shows them so you can save them.</p></div>
+     <div class="card"><h3>Returning? Log in with your 2 words</h3>
+      <div class="row"><input id="w1" placeholder="word one" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input id="w2" placeholder="word two" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+      <p><button onclick="login()">Create / Log in</button></p>
+      <p class="small">Same 2 words always bring back the same account
+      and the same unique ID.</p></div>`;
+    restoreInputs(cap);
+    return;
+  }
+  const contacts = state.contacts||[];
+  if(selected && !contacts.find(c=>c.id===selected)) selected=null;
+  let conv = [];
+  (state.inbox||[]).filter(m=>m.from===selected).forEach(m=>conv.push({mine:false,text:m.content,time:m.time,st:''}));
+  (state.sent||[]).filter(m=>m.to===selected).forEach(m=>conv.push({mine:true,text:m.content,time:m.time,st:m.status}));
+  conv.sort((a,b)=>a.time-b.time);
+  const w = state.words;
+  const accountPanel = w ? `
+   <div class="card"><h3>🔑 Your account — save this!</h3>
+    <div class="small">Your 2 secret words</div>
+    <div class="row"><input id="aw1" class="mono" readonly value="${esc(w[0])}" onclick="this.select()">
+    <button class="copybtn" onclick="copyEl('aw1',this)">Copy</button></div>
+    <div class="row"><input id="aw2" class="mono" readonly value="${esc(w[1])}" onclick="this.select()">
+    <button class="copybtn" onclick="copyEl('aw2',this)">Copy</button></div>
+    <div class="small">Your unique ID</div>
+    <div class="row"><input id="aid" class="mono" readonly value="${state.id}" onclick="this.select()">
+    <button class="copybtn" onclick="copyEl('aid',this)">Copy</button></div>
+    <p class="warn">Save these 2 words — they are your only key.
+    Anyone with them has your account.</p>
+    <div class="small">short: ${state.short_id}… · post office:
+    ${state.backend && state.backend.pn_path ? 'connected ✓' : 'connecting…'}</div>
+    <p class="row"><button onclick="syncNow()">Sync now</button>
+    <button onclick="logout()">Log out / clear data</button></p></div>` : `
+   <div class="card"><div class="small">Your unique ID</div>
+    <div class="mono">${state.id}</div>
+    <div class="small">short: ${state.short_id}… · post office:
+    ${state.backend && state.backend.pn_path ? 'connected ✓' : 'connecting…'}</div>
+    <p class="row"><button onclick="syncNow()">Sync now</button>
+    <button onclick="logout()">Log out / clear data</button></p></div>`;
+  el.innerHTML = accountPanel + `
+   <div class="card"><h3>Contacts</h3>
+    ${contacts.map(c=>`<button class="contact ${c.id===selected?'sel':''}" onclick="sel('${c.id}')">${esc(c.name)} <span class="mono small">${c.id.slice(0,16)}…</span></button>`).join('') || '<p class="small">No contacts yet.</p>'}
+    <div class="row"><input id="cid" placeholder="contact ID (32 hex)" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+    <input id="cname" placeholder="name" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+    <p><button onclick="addContact()">Add contact</button></p></div>
+   ${selected?`<div class="card"><h3>Chat</h3>
+    ${conv.map(m=>`<div class="msg ${m.mine?'mine':'theirs'}">${esc(m.text)}<div class="small">${new Date(m.time*1000).toLocaleTimeString()} ${m.st?('· '+esc(m.st)):''}</div></div>`).join('') || '<p class="small">No messages yet.</p>'}
+    <div class="row"><input id="msg" placeholder="message…" type="text" inputmode="text" autocomplete="off" spellcheck="false">
+    <button onclick="sendMsg()">Send</button></div></div>`:''}`;
+  restoreInputs(cap);
+}
+
+function copyEl(id, btn){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.focus(); el.select();
+  const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='Copied ✓';
+    setTimeout(()=>{ btn.textContent=o; },1500); } };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(el.value).then(done).catch(()=>{
+      if(document.execCommand('copy')) done(); else showErr('Copy failed — long-press the field to select and copy by hand.');
+    });
+  } else if(document.execCommand('copy')) done();
+  else showErr('Copy failed — long-press the field to select and copy by hand.');
+}
+
+async function autoCreate(){
+  clearErr(); setBusy(true, 'Creating your account…');
+  const r = await api('/api/autocreate', {});
+  setBusy(false);
+  if(r.error) showErr('Could not create your account: '+r.error);
+  await refresh();
+}
+async function login(){
+  const w1=document.getElementById('w1').value, w2=document.getElementById('w2').value;
+  if(!w1.trim() || !w2.trim()){
+    showErr('Type both words — or tap "Create account" above, no typing needed.');
+    return;
+  }
+  clearErr(); setBusy(true, 'Logging in… this can take up to a minute');
+  const r = await api('/api/login', {word1:w1, word2:w2});
+  setBusy(false);
+  if(r.error) showErr('Login failed: '+r.error);
+  await refresh();
+}
+async function logout(){
+  clearErr();
+  const r = await api('/api/logout', {});
+  if(r && r.error) showErr('Logout failed: '+r.error);
+  selected=null; await refresh();
+}
+async function syncNow(){
+  const r = await api('/api/sync', {});
+  if(r && r.error) showErr('Sync failed: '+r.error);
+  setTimeout(refresh, 800);
+}
+function sel(id){ selected=id; render(true); }
+async function addContact(){
+  const id=document.getElementById('cid').value, name=document.getElementById('cname').value;
+  const r = await api('/api/contacts', {id:id, name:name});
+  if(r.error) showErr('Could not add contact: '+r.error);
+  else { clearErr(); selected=id.trim().toLowerCase(); }
+  await refresh();
+}
+async function sendMsg(){
+  const el=document.getElementById('msg');
+  const m=el.value;
+  const r = await api('/api/send', {to:selected, content:m});
+  if(r.error) showErr('Could not send: '+r.error);
+  else { clearErr(); el.value=''; }
+  setTimeout(refresh, 800);
+}
+refresh(); pollHealth();
+setInterval(refresh, 2500);
+setInterval(pollHealth, 2000);
+</script>

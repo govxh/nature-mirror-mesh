@@ -15,9 +15,12 @@ app/data/postoffice/ and is never touched by user logins or logouts.
 
 Mechanism (LXMF 1.2.1, verified against the installed library):
   * RNS.Reticulum with enable_transport = True, so the node also
-    answers path requests from its announce table. This is how a
-    freshly logged-in app learns the public key belonging to an
-    offline contact's ID.
+    answers path requests from its announce table while an entry
+    lasts. (Note, learned 2026-10-21: RNS culls a path entry when
+    the interface it was learned on disappears, so this is NOT a
+    reliable way to learn an offline contact's public key — the app
+    primarily uses its on-device identity directory for that; see
+    recall_identity in nmm_app.py.)
   * LXMRouter.enable_propagation() makes this router a propagation
     node. Its propagation destination hash is written to
     data/postoffice/propagation_node.txt; every app backend configures

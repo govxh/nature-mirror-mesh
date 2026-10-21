@@ -1,0 +1,28 @@
+=== Nature-Mirror Mesh — app acceptance test (AUTO flow) ===
+Mode: subprocess mode (default)
+Run stamp: 20261021-042052
+PASS criterion (pre-registered): (gen) auto-create returns 2 words whose deterministic ID is the session ID and state shows the same words+ID; (relogin) manual login with the generated words reproduces the ID; (deliver) offline post-office delivery between two auto-created accounts; (reply) the reply is delivered.
+Wiped previous app/data for a hermetic test run.
+Post office up. Propagation node ID: 48875f24783ca4d57ce6aea8e94ed8c4
+STEP A0 OK  — GET /api/health: app up, post office connected
+        evidence: http=200 health={'app': 'up', 'postoffice': 'connected', 'postoffice_file': True, 'logged_in': False}
+STEP A1 OK  — auto-create account 1 (no typing): words generated, ID = deterministic ID of the words, state shows words + ID
+        evidence: http=200 words=('donkey', 'coin') id=7e87793d04e5fef251c51d881bbbe470 deterministic=7e87793d04e5fef251c51d881bbbe470 state_words=('donkey', 'coin')
+Auto account 1: words=('donkey', 'coin') id=7e87793d04e5fef251c51d881bbbe470
+STEP A2 OK  — log out → manual login with the generated words → same ID
+        evidence: http=200 id=7e87793d04e5fef251c51d881bbbe470 (original 7e87793d04e5fef251c51d881bbbe470)
+STEP A3 OK  — auto-create account 2 → different account, ID matches its generated words
+        evidence: words=('shark', 'tea') id=92fea31fea984c08cde97363ca94f87a deterministic=92fea31fea984c08cde97363ca94f87a tries=['92fea31fea984c08cde97363ca94f87a']
+Auto account 2: words=('shark', 'tea') id=92fea31fea984c08cde97363ca94f87a
+STEP A4 OK  — account 2 sends to account 1's ID; message stored at post office
+        evidence: local_id=6dd5f74042d7 status='stored at post office' token_in_acct1_local_inbox=False
+STEP A5 OK  — manual login with account 1's generated words → same ID, waiting message received
+        evidence: http=200 id=7e87793d04e5fef251c51d881bbbe470 same=True message_received=True token=NMM-AUTOTEST-20261021-042052-ONE
+STEP A6 OK  — reply sent; manual login with account 2's generated words → same ID, reply received
+        evidence: reply_status='stored at post office' id2_again=92fea31fea984c08cde97363ca94f87a same=True reply_received=True token=NMM-AUTOTEST-20261021-042052-TWO
+
+CRITERION (gen)     auto-create words → ID:  True
+CRITERION (relogin) generated words log in:  True
+CRITERION (deliver) offline delivery:        True
+CRITERION (reply)   reply delivered:         True
+RUN RESULT (subprocess mode (default), auto): PASS

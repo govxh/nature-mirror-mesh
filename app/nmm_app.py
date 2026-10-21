@@ -20,6 +20,12 @@ How it works
   Your unique ID is the LXMF delivery destination hash of that identity
   (32 hex characters; the first 16 are shown as the short form).
 
+  New users do not have to invent or type words: the "Create account"
+  button (POST /api/autocreate) generates 2 random words from the
+  embedded WORDLIST (secrets.choice) and logs in through exactly the
+  same derivation path as manual entry, then shows the words and the
+  ID so they can be copied and saved.
+
 * Logging in starts a backend process holding that identity. The
   backend connects over loopback TCP to the local Post Office
   (postoffice.py), announces itself, is configured with the post
@@ -58,8 +64,10 @@ import contextlib
 import hashlib
 import json
 import os
+import secrets
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import threading
@@ -73,6 +81,7 @@ PN_FILE = os.path.join(PO_DIR, "propagation_node.txt")
 PO_PIDFILE = os.path.join(DATA_DIR, "postoffice.pid")
 PN_PORT = int(os.environ.get("NMM_PN_PORT", "4429"))
 CLIENT_RNS_DIR = os.path.join(DATA_DIR, "rns_client")
+IDENTITIES_DIR = os.path.join(DATA_DIR, "identities")
 USERS_DIR = os.path.join(DATA_DIR, "users")
 SESSIONS_DIR = os.path.join(DATA_DIR, "sessions")
 DEFAULT_PORT = 8899
@@ -134,6 +143,120 @@ def id_from_seed(seed):
     identity = RNS.Identity.from_bytes(seed)
     dest_hash = RNS.Destination.hash(identity, "lxmf", "delivery")
     return RNS.hexrep(dest_hash, delimit=False)
+
+
+# ----------------------------------------------------------------------
+# Wordlist for auto-created accounts
+# ----------------------------------------------------------------------
+# Simple, concrete, easy-to-spell English words. Homophones and
+# easily confused spellings (sun/son, sea/see, rain/reign, pear/pair…)
+# are deliberately excluded: a word the user copies down must be the
+# word they type back. 2 words from this list is a TESTING-grade key
+# (see the module docstring) — the list exists so a new user can get
+# an account with zero typing, not to make the key strong.
+WORDLIST = (
+    "apple", "river", "tiger", "moon", "forest", "ocean", "lake",
+    "valley", "desert", "island", "cloud", "storm", "wind", "snow",
+    "leaf", "tree", "rock", "stone", "sand", "wave", "star", "sky",
+    "field", "meadow", "garden", "flower", "rose", "tulip", "daisy",
+    "lily", "grass", "fern", "moss", "pine", "oak", "elm", "bamboo",
+    "cactus", "coral", "pearl", "amber", "ruby", "opal", "jade",
+    "ivory", "maple", "cedar", "willow", "birch", "violet", "lilac",
+    "orchard", "harbor", "lagoon", "canyon", "cliff", "cave", "hill",
+    "pond", "stream", "brook", "path", "trail", "camp", "farm",
+    "barn", "gate", "wall", "roof", "beach", "coast", "lion",
+    "zebra", "panda", "koala", "camel", "donkey", "monkey", "rabbit",
+    "turtle", "eagle", "owl", "falcon", "sparrow", "robin", "duck",
+    "goose", "swan", "frog", "bear", "wolf", "fox", "deer", "goat",
+    "sheep", "horse", "mouse", "fish", "shark", "whale", "crab",
+    "snail", "bee", "ant", "moth", "beetle", "cat", "dog", "cow",
+    "pig", "table", "chair", "door", "window", "key", "lock",
+    "bell", "book", "paper", "card", "coin", "ring", "cup", "mug",
+    "plate", "bowl", "spoon", "bottle", "basket", "box", "bag",
+    "hat", "cap", "shoe", "sock", "shirt", "coat", "glove",
+    "scarf", "clock", "lamp", "candle", "mirror", "brush", "comb",
+    "soap", "towel", "pillow", "blanket", "desk", "shelf", "ladder",
+    "rope", "chain", "wheel", "boat", "train", "kite", "ball",
+    "drum", "jet", "bus", "car", "bike", "bread", "rice", "milk",
+    "cheese", "egg", "honey", "sugar", "salt", "lemon", "mango",
+    "banana", "grape", "peach", "melon", "cake", "tea", "coffee",
+    "home", "city", "town", "village", "road", "bridge", "tower",
+    "castle", "house", "room", "hall", "shop", "market", "school",
+    "park", "compass", "anchor", "lantern", "hammer", "bucket",
+    "shovel", "wagon", "saddle", "feather", "button", "pocket",
+    "ribbon", "marble", "pebble", "shell", "happy", "sunny",
+    "quiet", "gentle", "brave", "clever", "kind", "warm", "cool",
+    "bright", "swift", "calm", "proud", "merry", "sing", "dance",
+    "jump", "swim", "climb", "read", "play", "smile", "dream",
+    "wish", "hope", "laugh", "sleep", "wake", "grow", "shine",
+    "rain", "dawn", "dusk", "frost", "flame", "spark", "grove",
+    "reef", "dune", "mesa", "bay", "cape", "inlet", "marsh",
+    "heath",
+)
+
+
+def generate_words():
+    """Two random words for a brand-new account (auto-create)."""
+    return secrets.choice(WORDLIST), secrets.choice(WORDLIST)
+
+
+def publish_identity(identity, user_id):
+    """Write this account's PUBLIC key into the on-device identity
+    directory (see recall_identity for why). Public keys are public
+    by design in Reticulum — announces broadcast them to everyone;
+    this directory is just the app remembering, on this device,
+    what it is allowed to know."""
+    try:
+        os.makedirs(IDENTITIES_DIR, exist_ok=True)
+        final = os.path.join(IDENTITIES_DIR, user_id + ".pub")
+        tmp = final + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(identity.get_public_key())
+        os.replace(tmp, final)
+    except Exception as e:
+        print(f"[backend] identity publish failed: {e}", flush=True)
+
+
+def recall_identity(to_hash):
+    """Best-effort RNS Identity for a destination hash WITHOUT
+    needing a live path to it: (a) RNS's own recall (announces this
+    process has heard / known destinations it loaded), then (b) the
+    on-device identity directory — every account that has ever
+    logged in on this device published its public key there.
+
+    Why (b) exists: a PROPAGATED message needs the recipient's
+    identity (to encrypt to) and a path to the PROPAGATION NODE —
+    never a live path to the recipient. But the post office cannot
+    reliably answer path requests for an offline contact: RNS culls
+    a path-table entry as soon as the interface it was learned on
+    disappears (“Path … was removed since the attached interface no
+    longer exists”), and an offline contact's only interface was its
+    own now-closed connection. Waiting for that path is therefore a
+    race — observed intermittently failing acceptance flows with
+    “failed: ID not found (no path)” after the full 240 s wait,
+    while the post office logged “Ignoring path request …, no path
+    known” for a destination that had announced to it directly
+    (instrumented repro, 2026-10-21). The identity directory removes
+    the race for every account that has ever logged in on this
+    device; the path-request loop in do_send remains as fallback
+    for IDs never seen on this device."""
+    import RNS
+    ident = RNS.Identity.recall(to_hash)
+    if ident is not None:
+        return ident
+    try:
+        path = os.path.join(
+            IDENTITIES_DIR,
+            RNS.hexrep(to_hash, delimit=False) + ".pub")
+        with open(path, "rb") as f:
+            pub = f.read()
+        ident = RNS.Identity(create_keys=False)
+        ident.load_public_key(pub)
+        if RNS.Destination.hash(ident, "lxmf", "delivery") != to_hash:
+            return None
+        return ident
+    except Exception:
+        return None
 
 
 def atomic_write_json(path, data):
@@ -277,23 +400,26 @@ class Backend:
             entry["status"] = "failed: bad ID"
             self.refresh_sent_file()
             return
-        # Learn the recipient's public key: the post office (a transport
-        # node) answers path requests from its announce table, even for
-        # contacts that are currently offline. The wait is deliberately
-        # patient (240 s): a transport node's path answer rides its
-        # announce retransmit cadence and can take a minute or more to
-        # arrive — observed in testing, a valid answer landing ~1 s
-        # after a 60 s deadline had already failed the send. This
-        # system is delay-tolerant by design, so the send waits.
+        # Learn the recipient's public key (needed to encrypt the
+        # propagated message). First try WITHOUT any path at all —
+        # RNS recall / the on-device identity directory (see
+        # recall_identity: a live path to an offline contact is
+        # culled by RNS when the contact disconnects, so requiring
+        # one is a race). Only if the identity is genuinely unknown
+        # on this device, ask the network: the post office answers
+        # path requests from its announce table while that table
+        # still holds the contact, and each answer also teaches us
+        # the identity for next time. That wait is deliberately
+        # patient (240 s): path answers ride the announce retransmit
+        # cadence and can take a minute or more — this system is
+        # delay-tolerant by design, so the send waits.
+        dest_identity = recall_identity(to_hash)
         deadline = time.time() + 240
-        dest_identity = None
-        while time.time() < deadline and not self.stop_flag:
-            if RNS.Transport.has_path(to_hash):
-                dest_identity = RNS.Identity.recall(to_hash)
-                if dest_identity is not None:
-                    break
+        while dest_identity is None and time.time() < deadline and \
+                not self.stop_flag:
             RNS.Transport.request_path(to_hash)
             time.sleep(1)
+            dest_identity = recall_identity(to_hash)
         if dest_identity is None:
             entry["status"] = "failed: ID not found (no path)"
             with self.lock:
@@ -390,6 +516,11 @@ class Backend:
         real_id = RNS.hexrep(self.delivery.hash, delimit=False)
         assert real_id == self.user_id, (real_id, self.user_id)
         print(f"[backend] logged in, ID = {real_id}", flush=True)
+        # Publish our public key to the on-device identity directory
+        # so future senders on this device can encrypt a propagated
+        # message to us even while we are offline (see
+        # recall_identity).
+        publish_identity(self.identity, real_id)
 
         # Configure the post office as our propagation node (explicit
         # configuration mechanism of LXMF 1.2.1).
@@ -511,7 +642,7 @@ def run_backend(argv):
 # ======================================================================
 
 SESSION = {"proc": None, "session_dir": None, "user_id": None,
-           "seed": None}
+           "seed": None, "words": None}
 SESSION_LOCK = threading.Lock()
 
 
@@ -629,6 +760,8 @@ def make_handler():
                 self.wfile.write(body)
             elif self.path == "/api/state":
                 self._json(200, api_state())
+            elif self.path == "/api/health":
+                self._json(200, api_health())
             else:
                 self._json(404, {"error": "not found"})
 
@@ -637,6 +770,8 @@ def make_handler():
                 data = self._body()
                 if self.path == "/api/login":
                     self._json(*api_login(data))
+                elif self.path == "/api/autocreate":
+                    self._json(*api_autocreate())
                 elif self.path == "/api/logout":
                     self._json(*api_logout())
                 elif self.path == "/api/contacts":
@@ -659,6 +794,7 @@ def api_state():
             SESSION["proc"].poll() is None
         user_id = SESSION["user_id"] if active else None
         session_dir = SESSION["session_dir"]
+        words = SESSION["words"] if active else None
     state = {
         "logged_in": bool(active),
         "postoffice_file": os.path.isfile(PN_FILE),
@@ -666,6 +802,13 @@ def api_state():
     if active and user_id:
         state["id"] = user_id
         state["short_id"] = user_id[:16]
+        if words:
+            # The current session's 2 words, so the UI's "Your
+            # account" panel (words + ID, with Copy buttons) survives
+            # its periodic re-renders. This is the local UI on the
+            # user's own device — the same trust boundary as the
+            # backend process itself.
+            state["words"] = list(words)
         state["contacts"] = user_file(user_id, "contacts.json", [])
         state["inbox"] = user_file(user_id, "inbox.json", [])
         state["sent"] = user_file(user_id, "sent.json", [])
@@ -675,11 +818,62 @@ def api_state():
     return state
 
 
+def api_health():
+    """Lightweight status for the UI's status line: is the post
+    office actually reachable on its loopback port, and (when logged
+    in) what stage is the session backend at. Reuses the existing
+    IPC files (ready.json / status.json) — no parallel system."""
+    try:
+        s = socket.create_connection(("127.0.0.1", PN_PORT), 0.35)
+        s.close()
+        po_up = True
+    except Exception:
+        po_up = False
+    with SESSION_LOCK:
+        active = SESSION["proc"] is not None and \
+            SESSION["proc"].poll() is None
+        session_dir = SESSION["session_dir"]
+        user_id = SESSION["user_id"] if active else None
+    health = {
+        "app": "up",
+        "postoffice": "connected" if po_up else "not found",
+        "postoffice_file": os.path.isfile(PN_FILE),
+        "logged_in": bool(active),
+    }
+    if active and session_dir:
+        health["id"] = user_id
+        health["backend_ready"] = os.path.isfile(
+            os.path.join(session_dir, "ready.json"))
+        health["backend"] = read_json(
+            os.path.join(session_dir, "status.json"), {})
+    return health
+
+
 def api_login(data):
     word1 = (data.get("word1") or "").strip()
     word2 = (data.get("word2") or "").strip()
     if not word1 or not word2:
         return 400, {"error": "two words are required"}
+    return _start_session(word1, word2)
+
+
+def api_autocreate():
+    """Create a brand-new account with ZERO typing: generate 2
+    random words and log in through exactly the same derivation and
+    session path as manual entry (api_login → _start_session →
+    seed_from_words). Returns the words so the UI can show them for
+    saving/copying."""
+    word1, word2 = generate_words()
+    code, obj = _start_session(word1, word2)
+    if code == 200:
+        obj = dict(obj)
+        obj["word1"] = word1
+        obj["word2"] = word2
+        obj["autocreated"] = True
+    return code, obj
+
+
+def _start_session(word1, word2):
     with SESSION_LOCK:
         if SESSION["proc"] is not None and \
                 SESSION["proc"].poll() is None:
@@ -696,7 +890,9 @@ def api_login(data):
             backend = Backend(seed, session_dir)
             handle = ThreadBackendHandle(backend).start()
             SESSION.update(proc=handle, session_dir=session_dir,
-                           user_id=user_id, seed=seed)
+                           user_id=user_id, seed=seed,
+                           words=(word1.strip().lower(),
+                                  word2.strip().lower()))
         else:
             env = dict(os.environ)
             env["NMM_SEED_HEX"] = seed.hex()
@@ -706,7 +902,9 @@ def api_login(data):
                  "--session", session_dir],
                 env=env, stdout=log, stderr=subprocess.STDOUT)
             SESSION.update(proc=proc, session_dir=session_dir,
-                           user_id=user_id, seed=seed)
+                           user_id=user_id, seed=seed,
+                           words=(word1.strip().lower(),
+                                  word2.strip().lower()))
     # Wait for the backend to be ready (identity live, post office set).
     ready_file = os.path.join(session_dir, "ready.json")
     deadline = time.time() + 90
@@ -741,7 +939,7 @@ def api_logout():
         if session_dir and os.path.isdir(session_dir):
             shutil.rmtree(session_dir, ignore_errors=True)
         SESSION.update(proc=None, session_dir=None, user_id=None,
-                       seed=None)
+                       seed=None, words=None)
     return 200, {"ok": True}
 
 
@@ -811,42 +1009,154 @@ INDEX_HTML = """<!doctype html>
  body{font-family:system-ui,sans-serif;margin:0;background:#0e1512;color:#e8f0ea}
  .wrap{max-width:640px;margin:0 auto;padding:16px}
  h1{font-size:20px} .card{background:#16211b;border:1px solid #24402f;border-radius:12px;padding:14px;margin:12px 0}
- input,button,textarea{font-size:16px;padding:9px;border-radius:8px;border:1px solid #33513d;background:#0e1512;color:#e8f0ea}
+ input,button,textarea{font-size:16px;padding:9px;border-radius:8px;border:1px solid #33513d;background:#0e1512;color:#e8f0ea;-webkit-user-select:text;user-select:text}
  button{background:#1e4630;cursor:pointer} button:hover{background:#27603f}
- .mono{font-family:monospace;word-break:break-all} .small{font-size:13px;color:#9db8a6}
+ button:disabled{opacity:.45;cursor:wait}
+ .big{font-size:18px;padding:14px;width:100%;background:#27603f}
+ .mono{font-family:monospace;word-break:break-all}
+ input[readonly]{background:#101a13}
+ .small{font-size:13px;color:#9db8a6}
+ .warn{color:#ffd27d;font-size:14px}
  .msg{margin:6px 0;padding:8px 10px;border-radius:10px;max-width:85%}
  .mine{background:#1e4630;margin-left:auto} .theirs{background:#1a2630;margin-right:auto}
- .row{display:flex;gap:8px;flex-wrap:wrap} .row>*{flex:1}
+ .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .row>*{flex:1}
+ .row .copybtn{flex:0 0 auto}
  .contact{padding:8px;border:1px solid #33513d;border-radius:8px;margin:4px 0;cursor:pointer;background:none;width:100%;text-align:left;color:#e8f0ea}
  .contact.sel{background:#1e4630}
+ #err{display:none;background:#4a1d1d;border:1px solid #8a3b3b;color:#ffb4b4;border-radius:10px;padding:10px 12px;margin:12px 0;font-size:14px}
+ #busy{color:#ffd27d;min-height:18px}
 </style>
 <div class="wrap">
- <h1>🌿 Nature-Mirror Mesh <span class="small">tiny app v1</span></h1>
- <div id="app">Loading…</div>
+ <h1>🌿 Nature-Mirror Mesh <span class="small">app v0.1.2</span></h1>
+ <div id="status" class="card small">⏳ Starting…</div>
+ <div id="err"></div>
+ <div id="busy" class="small"></div>
+ <div id="app"><div class="card">⏳ Starting…</div></div>
  <p class="small">Offline-first chat. Messages for offline friends wait
- at your local Post Office until they log in. Your account key is just
+ at your local Post Office until they log in. An account key is just
  2 words — <b>for testing only</b>, never use it for anything valuable.</p>
 </div>
 <script>
-let state=null, selected=null;
+let state=null, selected=null, lastSig=null, lastLoggedIn=null;
+
 async function api(path, data){
-  const r = await fetch(path, data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{});
-  return r.json();
+  let r;
+  try{
+    r = await fetch(path, data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{});
+  }catch(e){
+    return {error:'could not reach the app server ('+e.message+') — is the app still starting?'};
+  }
+  try{ return await r.json(); }
+  catch(e){ return {error:'server answered HTTP '+r.status+' with an unreadable reply'}; }
 }
 function esc(s){return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-async function refresh(){
-  state = await api('/api/state');
-  render();
+function showErr(msg){ const e=document.getElementById('err'); e.textContent='⚠ '+msg; e.style.display='block'; }
+function clearErr(){ const e=document.getElementById('err'); e.textContent=''; e.style.display='none'; }
+function setBusy(on, msg){
+  document.querySelectorAll('button').forEach(b=>b.disabled=on);
+  document.getElementById('busy').textContent = on ? ('⏳ '+(msg||'Working…')) : '';
 }
-function render(){
+
+/* ------------------------------------------------------------------
+   Re-render safety — the v0.1.1 device bug (confirmed root cause):
+   the old page rebuilt #app's innerHTML every 2.5 s unconditionally,
+   erasing whatever the user was typing into the word fields. Now:
+   (1) a rebuild happens ONLY when the rendered state actually
+       changed (signature compare);
+   (2) a rebuild NEVER happens while the user is typing in a text
+       field, unless the login state itself flipped (then it must);
+   (3) when a rebuild does happen, every input's value, the focused
+       element and its selection are captured first and restored
+       after — typing survives rendering, always.
+------------------------------------------------------------------ */
+function stateSig(st){
+  const b = st.backend||{};
+  return JSON.stringify({l:st.logged_in, id:st.id||null, w:st.words||null,
+    pf:st.postoffice_file, pn:!!b.pn_path, ts:b.transfer_state,
+    c:st.contacts||[], i:st.inbox||[], s:st.sent||[], sel:selected});
+}
+function captureInputs(){
+  const cap={values:{}, focusId:null, selStart:null, selEnd:null};
+  document.querySelectorAll('#app input, #app textarea').forEach(el=>{
+    if(el.id) cap.values[el.id]=el.value;
+  });
+  const ae=document.activeElement;
+  if(ae && ae.id && document.getElementById('app').contains(ae)){
+    cap.focusId=ae.id;
+    try{ cap.selStart=ae.selectionStart; cap.selEnd=ae.selectionEnd; }catch(e){}
+  }
+  return cap;
+}
+function restoreInputs(cap){
+  Object.keys(cap.values).forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && el.value!==cap.values[id]) el.value=cap.values[id];
+  });
+  if(cap.focusId){
+    const el=document.getElementById(cap.focusId);
+    if(el){ el.focus();
+      if(cap.selStart!==null && el.setSelectionRange){
+        try{ el.setSelectionRange(cap.selStart, cap.selEnd); }catch(e){}
+      }
+    }
+  }
+}
+function userIsTyping(){
+  const ae=document.activeElement;
+  return !!(ae && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')
+            && document.getElementById('app').contains(ae));
+}
+
+async function refresh(){
+  const r = await api('/api/state');
+  if(r && !r.error){ state=r; render(); }
+  else{
+    showErr('Status check failed: '+((r&&r.error)||'unknown error'));
+    if(!state){ state={logged_in:false}; render(); }
+  }
+}
+async function pollHealth(){
+  const el=document.getElementById('status');
+  let h;
+  try{ const r=await fetch('/api/health'); h=await r.json(); }
+  catch(e){ el.textContent='⏳ Starting… (waiting for the app server)'; return; }
+  let t = (h.postoffice==='connected')
+    ? 'Post office: connected ✓'
+    : 'Post office: not found — it starts by itself, give it a moment';
+  if(h.logged_in){
+    t += ' · Logged in';
+    if(h.backend && h.backend.pn_path) t += ' · Post office link: live ✓';
+    else if(h.backend_ready===false) t += ' · Backend: starting…';
+    else t += ' · Post office link: connecting…';
+  } else {
+    t += ' · Not logged in';
+  }
+  el.textContent=t;
+}
+
+function render(force){
+  if(!state) return;
+  const sig = stateSig(state);
+  const loginChanged = (lastLoggedIn !== state.logged_in);
+  if(!force){
+    if(sig===lastSig && !loginChanged) return;      // nothing changed: no rebuild
+    if(userIsTyping() && !loginChanged) return;     // never rebuild under the user's fingers
+  }
+  const cap = captureInputs();
+  lastSig = sig; lastLoggedIn = state.logged_in;
   const el = document.getElementById('app');
   if(!state.logged_in){
-    el.innerHTML = `<div class="card"><h3>Create account / Log in</h3>
-      <div class="row"><input id="w1" placeholder="word one">
-      <input id="w2" placeholder="word two"></div>
+    el.innerHTML = `<div class="card"><h3>New here?</h3>
+      <p><button class="big" onclick="autoCreate()">✨ Create account</button></p>
+      <p class="small">No typing needed — the app invents your 2 secret
+      words for you and shows them so you can save them.</p></div>
+     <div class="card"><h3>Returning? Log in with your 2 words</h3>
+      <div class="row"><input id="w1" placeholder="word one" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input id="w2" placeholder="word two" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
       <p><button onclick="login()">Create / Log in</button></p>
       <p class="small">Same 2 words always bring back the same account
       and the same unique ID.</p></div>`;
+    restoreInputs(cap);
     return;
   }
   const contacts = state.contacts||[];
@@ -855,45 +1165,105 @@ function render(){
   (state.inbox||[]).filter(m=>m.from===selected).forEach(m=>conv.push({mine:false,text:m.content,time:m.time,st:''}));
   (state.sent||[]).filter(m=>m.to===selected).forEach(m=>conv.push({mine:true,text:m.content,time:m.time,st:m.status}));
   conv.sort((a,b)=>a.time-b.time);
-  el.innerHTML = `
+  const w = state.words;
+  const accountPanel = w ? `
+   <div class="card"><h3>🔑 Your account — save this!</h3>
+    <div class="small">Your 2 secret words</div>
+    <div class="row"><input id="aw1" class="mono" readonly value="${esc(w[0])}" onclick="this.select()">
+    <button class="copybtn" onclick="copyEl('aw1',this)">Copy</button></div>
+    <div class="row"><input id="aw2" class="mono" readonly value="${esc(w[1])}" onclick="this.select()">
+    <button class="copybtn" onclick="copyEl('aw2',this)">Copy</button></div>
+    <div class="small">Your unique ID</div>
+    <div class="row"><input id="aid" class="mono" readonly value="${state.id}" onclick="this.select()">
+    <button class="copybtn" onclick="copyEl('aid',this)">Copy</button></div>
+    <p class="warn">Save these 2 words — they are your only key.
+    Anyone with them has your account.</p>
+    <div class="small">short: ${state.short_id}… · post office:
+    ${state.backend && state.backend.pn_path ? 'connected ✓' : 'connecting…'}</div>
+    <p class="row"><button onclick="syncNow()">Sync now</button>
+    <button onclick="logout()">Log out / clear data</button></p></div>` : `
    <div class="card"><div class="small">Your unique ID</div>
     <div class="mono">${state.id}</div>
     <div class="small">short: ${state.short_id}… · post office:
     ${state.backend && state.backend.pn_path ? 'connected ✓' : 'connecting…'}</div>
     <p class="row"><button onclick="syncNow()">Sync now</button>
-    <button onclick="logout()">Log out / clear data</button></p></div>
+    <button onclick="logout()">Log out / clear data</button></p></div>`;
+  el.innerHTML = accountPanel + `
    <div class="card"><h3>Contacts</h3>
     ${contacts.map(c=>`<button class="contact ${c.id===selected?'sel':''}" onclick="sel('${c.id}')">${esc(c.name)} <span class="mono small">${c.id.slice(0,16)}…</span></button>`).join('') || '<p class="small">No contacts yet.</p>'}
-    <div class="row"><input id="cid" placeholder="contact ID (32 hex)">
-    <input id="cname" placeholder="name"></div>
+    <div class="row"><input id="cid" placeholder="contact ID (32 hex)" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+    <input id="cname" placeholder="name" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
     <p><button onclick="addContact()">Add contact</button></p></div>
    ${selected?`<div class="card"><h3>Chat</h3>
     ${conv.map(m=>`<div class="msg ${m.mine?'mine':'theirs'}">${esc(m.text)}<div class="small">${new Date(m.time*1000).toLocaleTimeString()} ${m.st?('· '+esc(m.st)):''}</div></div>`).join('') || '<p class="small">No messages yet.</p>'}
-    <div class="row"><input id="msg" placeholder="message…">
+    <div class="row"><input id="msg" placeholder="message…" type="text" inputmode="text" autocomplete="off" spellcheck="false">
     <button onclick="sendMsg()">Send</button></div></div>`:''}`;
+  restoreInputs(cap);
+}
+
+function copyEl(id, btn){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.focus(); el.select();
+  const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='Copied ✓';
+    setTimeout(()=>{ btn.textContent=o; },1500); } };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(el.value).then(done).catch(()=>{
+      if(document.execCommand('copy')) done(); else showErr('Copy failed — long-press the field to select and copy by hand.');
+    });
+  } else if(document.execCommand('copy')) done();
+  else showErr('Copy failed — long-press the field to select and copy by hand.');
+}
+
+async function autoCreate(){
+  clearErr(); setBusy(true, 'Creating your account…');
+  const r = await api('/api/autocreate', {});
+  setBusy(false);
+  if(r.error) showErr('Could not create your account: '+r.error);
+  await refresh();
 }
 async function login(){
   const w1=document.getElementById('w1').value, w2=document.getElementById('w2').value;
+  if(!w1.trim() || !w2.trim()){
+    showErr('Type both words — or tap "Create account" above, no typing needed.');
+    return;
+  }
+  clearErr(); setBusy(true, 'Logging in… this can take up to a minute');
   const r = await api('/api/login', {word1:w1, word2:w2});
-  if(r.error) alert(r.error);
-  refresh();
+  setBusy(false);
+  if(r.error) showErr('Login failed: '+r.error);
+  await refresh();
 }
-async function logout(){ await api('/api/logout', {}); selected=null; refresh(); }
-async function syncNow(){ await api('/api/sync', {}); setTimeout(refresh, 800); }
-function sel(id){ selected=id; render(); }
+async function logout(){
+  clearErr();
+  const r = await api('/api/logout', {});
+  if(r && r.error) showErr('Logout failed: '+r.error);
+  selected=null; await refresh();
+}
+async function syncNow(){
+  const r = await api('/api/sync', {});
+  if(r && r.error) showErr('Sync failed: '+r.error);
+  setTimeout(refresh, 800);
+}
+function sel(id){ selected=id; render(true); }
 async function addContact(){
   const id=document.getElementById('cid').value, name=document.getElementById('cname').value;
   const r = await api('/api/contacts', {id:id, name:name});
-  if(r.error) alert(r.error); else selected=id.trim().toLowerCase();
-  refresh();
+  if(r.error) showErr('Could not add contact: '+r.error);
+  else { clearErr(); selected=id.trim().toLowerCase(); }
+  await refresh();
 }
 async function sendMsg(){
-  const m=document.getElementById('msg').value;
+  const el=document.getElementById('msg');
+  const m=el.value;
   const r = await api('/api/send', {to:selected, content:m});
-  if(r.error) alert(r.error);
+  if(r.error) showErr('Could not send: '+r.error);
+  else { clearErr(); el.value=''; }
   setTimeout(refresh, 800);
 }
-refresh(); setInterval(refresh, 2500);
+refresh(); pollHealth();
+setInterval(refresh, 2500);
+setInterval(pollHealth, 2000);
 </script>
 """
 

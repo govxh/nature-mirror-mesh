@@ -3,8 +3,8 @@ name: Build APK
 # Builds the Nature-Mirror Mesh Android app (android/, Chaquopy-embedded
 # Python core from app/) into an installable, debug-signed APK.
 # The APK is uploaded as a workflow artifact AND attached to the
-# app-v0.1.1 GitHub Release, which gives a permanent download link:
-#   https://github.com/govxh/nature-mirror-mesh/releases/tag/app-v0.1.1
+# app-v0.1.2 GitHub Release, which gives a permanent download link:
+#   https://github.com/govxh/nature-mirror-mesh/releases/tag/app-v0.1.2
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
       - ".github/workflows/apk.yml"
 
 permissions:
-  contents: write # needed to create/update the app-v0.1.1 release
+  contents: write # needed to create/update the app-v0.1.2 release
 
 jobs:
   build:
@@ -58,15 +58,18 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
-      - name: Attach APK to the app-v0.1.1 release
+      - name: Attach APK to the app-v0.1.2 release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: app-v0.1.1
-          name: Nature Mirror Mesh app v0.1.1
+          tag_name: app-v0.1.2
+          name: Nature Mirror Mesh app v0.1.2
           body: |
-            Installable Android APK of Nature Mirror Mesh v0.1.1
-            (fixes ERR_CLEARTEXT_NOT_PERMITTED on first device launch:
-            loopback-only cleartext via networkSecurityConfig)
+            Installable Android APK of Nature Mirror Mesh v0.1.2
+            (new: one-tap "Create account" — the app generates your 2
+            secret words and shows them with Copy buttons; errors and
+            startup status are now shown in the UI instead of failing
+            silently; fixes the login fields being wiped every 2.5 s
+            by the page's periodic re-render, so typing works)
             (debug-signed; sideload install — Android will warn that it
             is from an unknown source). The app is fully offline:
             accounts, the post office and all messaging run on the

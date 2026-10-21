@@ -31,8 +31,8 @@ android {
         applicationId = "org.naturemirrormesh.app"
         minSdk = 24 // Chaquopy 17 requires >= 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
 
         ndk {
             // Python 3.12+ in Chaquopy is 64-bit only.

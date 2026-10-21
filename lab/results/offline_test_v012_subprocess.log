@@ -1,0 +1,27 @@
+=== Nature-Mirror Mesh — app acceptance test (manual flow) ===
+Mode: subprocess mode (default)
+Run stamp: 20261021-042216
+PASS criterion (pre-registered): (i) same words → same ID on re-login, for both accounts; (ii) account 1 receives account 2's exact message after being offline; (iii) account 2 receives the exact reply — in EACH of the subprocess and thread modes. Sends must reach 'stored at post office'; account 1's local inbox must not contain the token before step 4. Plus (ui): the served page must pass the typing-preservation DOM regression test.
+Post office up. Propagation node ID: a5bd697c82dcc31cfbaffb0379562978
+STEP U OK  — served page: typing never wiped by re-render (DOM regression test)
+        evidence: structural assertions passed; DOM simulation: ok   login form rendered (w1 + w2 inputs exist); ok   unchanged-state tick does not rebuild the DOM; ok   typed values intact after the tick; ok   changed-state tick while typing does not rebuild the DOM; ok   typed values still intact; ok   rebuild happens once the user is not typing; ok   typed values preserved across the rebuild; ok   login transition renders immediately while focused; ok   account panel shows the 2 words; ok   account panel shows the full 32-hex ID; UI-DOM: PASS
+Expected ID for ('apple', 'river'): 118624df2e583c1bcaeca341dc813ab3
+Expected ID for ('tiger', 'moon'): f543ccb8a691f98edb0eb68e5d428940
+STEP 1 OK  — create account 1 ('apple river')
+        evidence: http=200 id=118624df2e583c1bcaeca341dc813ab3 (deterministic expectation 118624df2e583c1bcaeca341dc813ab3)
+STEP 2 OK  — clear data → account 2 ('tiger moon'), different ID
+        evidence: logged_out=True http=200 id=f543ccb8a691f98edb0eb68e5d428940
+STEP 3 OK  — account 2 sends to account 1's ID; message stored at post office
+        evidence: local_id=3286ba56c1c5 status='stored at post office' spool_files=1 token_in_acct1_local_inbox=False
+STEP 4a OK  — re-login account 1 with only its 2 words → same ID
+        evidence: http=200 id=118624df2e583c1bcaeca341dc813ab3 (original 118624df2e583c1bcaeca341dc813ab3)
+STEP 4b OK  — account 1 receives account 2's exact message
+        evidence: content match=True token=NMM-APPTEST-20261021-042216-ONE
+STEP 5 OK  — account 1 replies; account 2 (re-login, same ID) receives the exact reply
+        evidence: reply_status='stored at post office' id2_again=f543ccb8a691f98edb0eb68e5d428940 (same=True) reply_received=True token=NMM-APPTEST-20261021-042216-TWO
+
+CRITERION (i)   same words → same ID:      True
+CRITERION (ii)  offline message delivered: True
+CRITERION (iii) reply delivered:           True
+CRITERION (ui)  typing-preservation page:  True
+RUN RESULT (subprocess mode (default)): PASS

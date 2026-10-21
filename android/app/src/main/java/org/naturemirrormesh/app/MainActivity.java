@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -46,6 +47,13 @@ public class MainActivity extends Activity {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        // Input hardening (v0.1.2): the whole UI is form fields in
+        // this WebView, so it must be able to take and keep touch
+        // focus — without focusable-in-touch-mode some devices /
+        // OEM skins never raise the keyboard for page inputs.
+        webView.setFocusable(true);
+        webView.setFocusableInTouchMode(true);
+        webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request,
@@ -62,9 +70,11 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 loadRetries = 0;
+                view.requestFocus();
             }
         });
         setContentView(webView);
+        webView.requestFocus();
 
         waitForServerThenLoad();
     }
